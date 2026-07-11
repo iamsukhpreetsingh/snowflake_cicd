@@ -1,27 +1,3 @@
-# name: CI - validate SQL
-
-# on:
-#   push:
-#     branches: [ dev, main ]
-#     path: [ 'objects/**' ]
-
-#   pull_request:
-#     branches: [ 'main' ]
-#     paths: [ 'objects/**' ]
-
-# jobs:
-#   lint-and-validate:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v4
-#     - run: pip install sqlfluff schemachange
-
-#     - name: Lint SQL
-#       run: sqlfluff lint objects/ --dialect snowflake --templater jinja --jinja-context db DUMMY_DB
-
-#     - name: Dry run
-#       run: schemachange -f objects/ --dry-run --jinja --vars '{"db": "DUMMY_DB"}'
-
 name: CI - Validate SQL
 on:
   push:
@@ -50,4 +26,4 @@ jobs:
       run: python scripts/lint_schemachange.py
 
     - name: Schemachange Dry-Run
-      run: schemachange -f pipelines/ --dry-run
+      run: schemachange -f objects/ --dry-run
