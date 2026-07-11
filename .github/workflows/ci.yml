@@ -30,9 +30,11 @@ jobs:
     - name: Install dependencies
       run: pip install sqlfluff schemachange
 
-    # Use the pre-processor script instead of raw sqlfluff
-    - name: Lint SQL (Dev Context)
-      run: python scripts/lint_schemachange.py
+    - name: Fix SQL
+      run: sqlfluff fix objects/ --config .sqlfluff --force
+
+    - name: Lint SQL
+      run: sqlfluff lint objects/ --config .sqlfluff
 
     - name: Schemachange Dry-Run
-      run: schemachange -f objects/ --dry-run
+      run: schemachange deploy -f objects --dry-run
