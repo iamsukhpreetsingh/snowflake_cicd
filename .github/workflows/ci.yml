@@ -1,0 +1,23 @@
+name: CI - validate SQL
+
+on:
+  push:
+    branches: [ dev, main ]
+    path: [ 'objects/**' ]
+
+  pull_request:
+    branches: [ 'main' ]
+    paths: [ 'objects/**' ]
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: action/checkout@v4
+    - run: pip install sqlfluff sqlfluff-snowflake schemachange
+
+    - name: Lint SQL
+      run: sqlfluff lint objects/ --dialect snowflake
+
+    - name: Dry run
+      run: schemachange -f objects/ --dry-run
