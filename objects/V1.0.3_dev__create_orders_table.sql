@@ -17,6 +17,5 @@ CREATE TABLE IF NOT EXISTS IDENTIFIER('$DB_NAME' || '.FROM_DEV.ORDERS') (
     state              VARCHAR(100),
     country            VARCHAR(100),
     postal_code        VARCHAR(20),
-    created_at         TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
-    updated_at         TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    created_at         TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 );
