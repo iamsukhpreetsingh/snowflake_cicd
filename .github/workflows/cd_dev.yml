@@ -25,7 +25,7 @@ jobs:
         SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
         SF_ROLE: ${{ secrets.SF_ROLE }}
         SF_WAREHOUSE: 'COMPUTE_WH'
-        SF_DATABASE: ${{ secrets.SF_DATABASE }}
+        SF_DATABASE: ${{ vars.SF_DATABASE }}
         SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
       run: |
         schemachange deploy -f objects \
