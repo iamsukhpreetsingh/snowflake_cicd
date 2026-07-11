@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS IDENTIFIER('{{ db }}.DEMO.ORDERS') (
     quantity           NUMBER(10,0) NOT NULL,
     unit_price         NUMBER(10,2) NOT NULL,
     discount           NUMBER(10,2) DEFAULT 0,
-    tax_amount         NUMBER(10,2) DEFAULT 0,
     shipping_cost      NUMBER(10,2) DEFAULT 0,
     total_amount       NUMBER(12,2) NOT NULL,
     orderstatus       VARCHAR(30),
