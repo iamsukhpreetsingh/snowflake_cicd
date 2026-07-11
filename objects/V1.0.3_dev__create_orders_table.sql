@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS IDENTIFIER('$DB_NAME' || '.FROM_DEV.ORDERS') (
+    order_id           NUMBER IDENTITY(1,1),
+    customer_id        NUMBER NOT NULL,
+    product_id         NUMBER NOT NULL,
+    order_date         TIMESTAMP_NTZ NOT NULL,
+    quantity           NUMBER(10,0) NOT NULL,
+    unit_price         NUMBER(10,2) NOT NULL,
+    discount           NUMBER(10,2) DEFAULT 0,
+    tax_amount         NUMBER(10,2) DEFAULT 0,
+    shipping_cost      NUMBER(10,2) DEFAULT 0,
+    total_amount       NUMBER(12,2) NOT NULL,
+    order_status       VARCHAR(30),
+    payment_method     VARCHAR(30),
+    payment_status     VARCHAR(30),
+    shipping_address   VARCHAR(255),
+    city               VARCHAR(100),
+    state              VARCHAR(100),
+    country            VARCHAR(100),
+    postal_code        VARCHAR(20),
+    created_at         TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
