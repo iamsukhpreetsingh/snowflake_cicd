@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SF_USER: ${{ secrets.SF_USER }}
-      SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
       SF_ROLE: ${{ secrets.SF_ROLE }}
       SF_DATABASE: ${{ secrets.SF_DATABASE }}
       SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
