@@ -13,10 +13,12 @@ jobs:
   lint-and-validate:
     runs-on: ubuntu-latest
     env:
-      SF_USER: ${{ secrets.SF_USER }}
+      SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
+      SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-      SF_ROLE: ${{ secrets.SF_ROLE }}
-      SF_DATABASE: ${{ secrets.SF_DATABASE }}
+      SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+      SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+      SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
       SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
 
     steps:

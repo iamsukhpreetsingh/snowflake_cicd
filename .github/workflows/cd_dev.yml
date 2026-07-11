@@ -20,12 +20,12 @@ jobs:
     - run: pip install schemachange
     - name: Deploy to Dev
       env:
-        SF_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
-        SF_USER: ${{ secrets.SF_USER }}
+        SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
+        SNOWFLAKE_USER: ${{ secrets.SF_USER }}
         SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-        SF_ROLE: ${{ secrets.SF_ROLE }}
-        SF_WAREHOUSE: 'COMPUTE_WH'
-        SF_DATABASE: ${{ vars.SF_DATABASE }}
+        SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+        SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+        SNOWFLAKE_DATABASE: ${{ vars.SF_DATABASE }}
         SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
       run: |
         schemachange deploy -f objects \
