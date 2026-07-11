@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS IDENTIFIER('$DB_NAME' || '.FROM_DEV.ORDERS') (
+CREATE TABLE IF NOT EXISTS IDENTIFIER('{{ db }}.DEMO.ORDERS') (
     order_id           NUMBER IDENTITY(1,1),
     customer_id        NUMBER NOT NULL,
     product_id         NUMBER NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS IDENTIFIER('$DB_NAME' || '.FROM_DEV.ORDERS') (
     tax_amount         NUMBER(10,2) DEFAULT 0,
     shipping_cost      NUMBER(10,2) DEFAULT 0,
     total_amount       NUMBER(12,2) NOT NULL,
-    order_status       VARCHAR(30),
+    orderstatus       VARCHAR(30),
     payment_method     VARCHAR(30),
     payment_status     VARCHAR(30),
     shipping_address   VARCHAR(255),
