@@ -56,6 +56,17 @@ def main():
                         f.write(parsed_content)
         
         # Run SQLFluff against the temporary directory
+        subprocess.run(
+    [
+        "sqlfluff",
+        "fix",
+        tmpdir,
+        "--config",
+        ".sqlfluff",
+        "--force",
+    ],
+    check=False,
+)
         result = subprocess.run(
     [
         "sqlfluff",

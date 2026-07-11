@@ -1,13 +1,12 @@
 [sqlfluff]
 dialect = snowflake
 templater = raw
-# Ignore the schemachange tracking table
-exclude_rules = L031
 
-[sqlfluff:rules:L010]
-# Capitalize keywords (optional, but good practice)
+[sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = upper
 
-[sqlfluff:rules:L030]
-# Function names should be upper case
-capitalisation_policy = upper   
+[sqlfluff:rules:capitalisation.functions]
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
