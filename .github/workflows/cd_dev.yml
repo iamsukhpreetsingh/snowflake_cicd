@@ -1,0 +1,31 @@
+name: CD - Dev/QA
+
+on:
+  workflow_run:
+    workflows: [ "CI - Validate SQL" ]
+    types: [ "completed" ]
+    branches: [ dev ]
+
+jobs:
+  deploy-dev:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.workflow_run.head_sha }}
+    - run: pip install schemachange
+    - name: Deploy to Dev
+      env:
+        SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
+        SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+        SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+        SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+        SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+        SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+        SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
+      run: |
+        schemachange deploy -f objects \
+            --vars '{"SCHEMA_PREFIX": "DEV_"}' \
+            --create-change-history-table

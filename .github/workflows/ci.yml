@@ -6,7 +6,7 @@ on:
     branches: [ dev, main ]
     paths: [ 'objects/**' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
     paths: [ 'objects/**' ]
 
 jobs:
