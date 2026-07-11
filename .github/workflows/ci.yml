@@ -12,6 +12,13 @@ on:
 jobs:
   lint-and-validate:
     runs-on: ubuntu-latest
+    env:
+      SF_USER: ${{ secrets.SF_USER }}
+      SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      SF_ROLE: ${{ secrets.SF_ROLE }}
+      SF_DATABASE: ${{ secrets.SF_DATABASE }}
+      SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
+
     steps:
     - uses: actions/checkout@v4
 
