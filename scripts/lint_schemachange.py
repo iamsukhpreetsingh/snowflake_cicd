@@ -4,19 +4,29 @@ import sys
 import tempfile
 import subprocess
 
+import re
+
 def preprocess_schemachange_sql(content: str, env_db: str) -> str:
-    """
-    Replaces Schemachange variables and unwraps IDENTIFIER() 
-    so static linters can read the actual schema/table names.
-    """
-    # 1. Replace the Schemachange variable with the Dev database name
-    content = content.replace('$DB_NAME', env_db)
-    
-    # 2. Unwrap IDENTIFIER('DEV_DB.FROM_DEV.CUSTOMERS') -> DEV_DB.FROM_DEV.CUSTOMERS
-    # This regex looks for IDENTIFIER('...') and extracts what is inside the quotes
-    pattern = r"IDENTIFIER\(\s*'([^']+)'\s*\)"
-    content = re.sub(pattern, r'\1', content, flags=re.IGNORECASE)
-    
+    # Replace schemachange variables
+    content = content.replace("$DB_NAME", env_db)
+
+    # Replace IDENTIFIER(...) with the evaluated object name
+    def replace_identifier(match):
+        expr = match.group(1)
+
+        # Extract all quoted string literals
+        parts = re.findall(r"'([^']*)'", expr)
+
+        # Join them together
+        return "".join(parts)
+
+    content = re.sub(
+        r"IDENTIFIER\s*\((.*?)\)",
+        replace_identifier,
+        content,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
     return content
 
 def main():
@@ -47,10 +57,16 @@ def main():
         
         # Run SQLFluff against the temporary directory
         result = subprocess.run(
-            ['sqlfluff', 'lint', tmpdir, '--dialect', 'snowflake'],
-            capture_output=True,
-            text=True
-        )
+    [
+        "sqlfluff",
+        "lint",
+        tmpdir,
+        "--config",
+        ".sqlfluff",
+    ],
+    capture_output=True,
+    text=True,
+)
         
         # Clean up the output: replace the temp directory path with your actual path
         # so the GitHub PR annotations point to the correct files
