@@ -1,5 +1,7 @@
 name: CI - Validate SQL
 on:
+  workflow_dispatch:
+
   push:
     branches: [ dev, main ]
     paths: [ 'objects/**' ]
