@@ -26,10 +26,10 @@ name: CI - Validate SQL
 on:
   push:
     branches: [ dev, main ]
-    paths: [ 'pipelines/**' ]
+    paths: [ 'objects/**' ]
   pull_request:
     branches: [ main ]
-    paths: [ 'pipelines/**' ]
+    paths: [ 'objects/**' ]
 
 jobs:
   lint-and-validate:
