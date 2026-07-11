@@ -4,7 +4,7 @@ templater = jinja
 
 [sqlfluff:templater:jinja:context]
 db = DEV_DB
-read_role = DEV_READ_ROLE
+read_role = SF_READ_ROLE
 
 [sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = upper
