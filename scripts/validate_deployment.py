@@ -14,13 +14,10 @@ def extract_object_name(sql_text: str):
     return match.group(1) if match else None
 
 
-def validate(env: str, since_timestamp: str):
-    db = os.environ['SF_DATABASE']
+def validate(since_timestamp: str):
+    db = os.environ['SNOWFLAKE_DATABASE']
 
     try:
-        
-        # Repo secrets vs. GitHub Environment variables is about where the value is stored and how it's protected on GitHub's side (secrets are encrypted at rest, masked in logs; environment variables are plain text, visible in the UI). But both get resolved by GitHub Actions and injected into the runner as a normal environment variable, via whichever env: mapping you write in the workflow YAML — the code doesn't care where the value came from, it just reads os.environ['SNOWFLAKE_USER'] from the process.
-
         conn = snowflake.connector.connect(
             user=os.environ['SNOWFLAKE_USER'],
             password=os.environ['SNOWFLAKE_PASSWORD'],
@@ -36,7 +33,6 @@ def validate(env: str, since_timestamp: str):
     cursor = conn.cursor()
     errors = []
 
-    # Check 1: find scripts applied in THIS deploy run only
     try:
         cursor.execute(f"""
             SELECT SCRIPT, SCRIPT_TYPE, STATUS
@@ -74,7 +70,6 @@ def validate(env: str, since_timestamp: str):
     except Exception as e:
         errors.append(f"Could not query change history: {e}")
 
-    # Check 2: no tasks failed in the last 5 minutes
     try:
         cursor.execute(f"""
             SELECT COUNT(*) FROM TABLE({db}.INFORMATION_SCHEMA.TASK_HISTORY(
@@ -103,5 +98,4 @@ def validate(env: str, since_timestamp: str):
 
 
 if __name__ == "__main__":
-    # usage: python validate.py <env> <since_timestamp>
     validate(sys.argv[1])
