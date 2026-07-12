@@ -10,11 +10,3 @@ change-history-table: '{{env_var("SNOWFLAKE_DATABASE")}}.PUBLIC.CHANGE_HISTORY'
 vars:
   db: '{{env_var("SNOWFLAKE_DATABASE")}}'
   read_role: '{{env_var("SF_READ_ROLE")}}'
-
-# config-version: 1
-# root-folder: 'objects'
-# modules-folder: null
-# change-history-table: '{{env_var("SNOWFLAKE_DATABASE")}}.PUBLIC.CHANGE_HISTORY'
-# vars:
-#   db: '{{env_var("SNOWFLAKE_DATABASE")}}'
-#   read_role: '{{env_var("SF_READ_ROLE")}}'

@@ -17,7 +17,9 @@ jobs:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.event.workflow_run.head_sha }}
+
     - run: pip install schemachange
+
     - name: Deploy to Dev
       env:
         SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
@@ -31,3 +33,16 @@ jobs:
         schemachange deploy -f objects \
             --vars '{"SCHEMA_PREFIX": "DEV_"}' \
             --create-change-history-table
+
+    - name: Post-deployment validation
+      env:
+        SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
+        SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+        SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+        SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+        SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+        SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+        SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
+      run: |
+        pip install snowflake-connector-python
+        python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
