@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS IDENTIFIER('{{ db }}.DEMO.TEST_PASS') (
+    id          NUMBER,
+    label       VARCHAR(50),
+    created_at  TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
