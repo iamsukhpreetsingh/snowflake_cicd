@@ -80,37 +80,68 @@ jobs:
       SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
       SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
 
+    # steps:
+    # - name: Checkout repository
+    #   uses: actions/checkout@v4
+    #   with:
+    #     token: ${{ secrets.GITHUB_TOKEN }}
+    #     ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    # - name: Set up Python virtual environment
+    #   run: |
+    #     python3 -m venv .venv
+    #     source .venv/bin/activate
+    #     python -m pip install --upgrade pip
+    #     pip install schemachange snowflake-connector-python
+
+    # - name: Record deployment start time
+    #   id: start_time
+    #   run: |
+    #     echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
+
+    # - name: Deploy to Development
+    #   run: |
+    #     source .venv/bin/activate
+
+    #     schemachange deploy \
+    #       -f objects \
+    #       --vars '{"SCHEMA_PREFIX":"DEV_"}' \
+    #       --create-change-history-table
+
+    # - name: Post-deployment validation
+    #   run: |
+    #     source .venv/bin/activate
+
+    #     python scripts/validate_deployment.py \
+    #       "${{ steps.start_time.outputs.ts }}"
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+        ref: ${{ github.event.workflow_run.head_sha }}
 
-    - name: Set up Python virtual environment
-      run: |
-        python3 -m venv .venv
-        source .venv/bin/activate
-        python -m pip install --upgrade pip
-        pip install schemachange snowflake-connector-python
+    - run: pip install schemachange snowflake-connector-python
 
-    - name: Record deployment start time
+    - name: Create pre-deploy backup snapshot
+      id: backup
+      run: python scripts/backup_snapshot.py
+
+    - name: Record deploy start time
       id: start_time
-      run: |
-        echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
+      run: echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
 
-    - name: Deploy to Development
+    - name: Deploy to Dev
       run: |
-        source .venv/bin/activate
-
-        schemachange deploy \
-          -f objects \
-          --vars '{"SCHEMA_PREFIX":"DEV_"}' \
-          --create-change-history-table
+        schemachange deploy -f objects \
+            --vars '{"SCHEMA_PREFIX": "DEV_"}' \
+            --create-change-history-table
 
     - name: Post-deployment validation
-      run: |
-        source .venv/bin/activate
+      run: python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
 
-        python scripts/validate_deployment.py \
-          "${{ steps.start_time.outputs.ts }}"
+    - name: Rollback on failure
+      if: failure()
+      run: python scripts/rollback.py "${{ steps.backup.outputs.backup_db }}"
+
+    - name: Cleanup backup snapshot
+      if: success()
+      run: python scripts/cleanup_backup.py "${{ steps.backup.outputs.backup_db }}"
