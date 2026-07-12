@@ -13,36 +13,33 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: development
+    env:
+      SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
+      SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+      SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+      SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+      SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
+
     steps:
     - uses: actions/checkout@v4
       with:
         ref: ${{ github.event.workflow_run.head_sha }}
 
-    - run: pip install schemachange
+    - run: pip install schemachange snowflake-connector-python
+
+    - name: Record deploy start time
+      id: start_time
+      run: echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
 
     - name: Deploy to Dev
-      env:
-        SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
-        SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-        SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-        SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-        SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
-        SNOWFLAKE_DATABASE: ${{ vars.SF_DATABASE }}
-        SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
       run: |
         schemachange deploy -f objects \
             --vars '{"SCHEMA_PREFIX": "DEV_"}' \
             --create-change-history-table
 
     - name: Post-deployment validation
-      env:
-        SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
-        SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-        SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-        SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-        SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
-        SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
-        SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
-      run: |
-        pip install snowflake-connector-python
-        python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
+      run: python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
+
+# One thing to know about scoping: job-level env: applies to every step in that job, with no exceptions. If you ever need one step to use a different value temporarily (e.g., a one-off debug run against a different warehouse), you can still add a step-level env: block on just that step — step-level values override job-level ones for that step only, everything else stays inherited as normal.
