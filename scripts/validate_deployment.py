@@ -37,7 +37,7 @@ def validate(since_timestamp: str):
         cursor.execute(f"""
             SELECT SCRIPT, SCRIPT_TYPE, STATUS
             FROM {db}.PUBLIC.CHANGE_HISTORY
-            WHERE INSTALLED_ON >= %s
+            WHERE INSTALLED_ON >= TO_TIMESTAMP_TZ(%s || ' +00:00')
               AND STATUS = 'Success'
             ORDER BY INSTALLED_ON
         """, (since_timestamp,))
