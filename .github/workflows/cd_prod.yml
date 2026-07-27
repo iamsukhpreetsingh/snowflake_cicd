@@ -25,18 +25,15 @@ jobs:
     environment: production
 
     env:
-      SNOWFLAKE_ACCOUNT: MDPVAJJ-NJB64163
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
       SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
       SNOWFLAKE_WAREHOUSE: COMPUTE_WH
       SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE_PROD }}
-      SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -56,14 +53,14 @@ jobs:
       - name: Deploy to Production
         run: |
           schemachange deploy -f objects \
-              --vars '{"SCHEMA_PREFIX": "PROD_"}' \
+              --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
               --create-change-history-table
 
       - name: Post-deployment validation
         run: python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
 
       - name: Rollback on failure
-        if: failure()
+        if: failure() && steps.backup.outcome == 'success'
         run: python scripts/rollback.py "${{ steps.backup.outputs.backup_db }}"
 
       - name: Cleanup backup snapshot
@@ -73,6 +70,6 @@ jobs:
       - name: Notify deployment success
         if: success()
         run: |
-          echo "✅ Production deployment completed successfully"
+          echo "Production deployment completed successfully"
           echo "Database: ${{ env.SNOWFLAKE_DATABASE }}"
           echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"

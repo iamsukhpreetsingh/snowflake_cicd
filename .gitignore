@@ -1,3 +1,7 @@
 .secrets
 .vars
 opencode.json
+*.tfvars, 
+*.tfstate, 
+*.tfstate.backup, 
+.terraform/

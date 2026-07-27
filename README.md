@@ -55,8 +55,45 @@ snowflake_cicd/
 │   ├── backup_snapshot.py      # Pre-deploy backup
 │   ├── rollback.py             # Rollback on failure
 │   ├── validate_deployment.py  # Post-deploy validation
-│   └── cleanup_backup.py       # Cleanup backup DB
+│   ├── cleanup_backup.py       # Cleanup backup DB
+│   └── lint_schemachange.py    # Jinja-aware SQL linter
 └── schemachange-config.yml     # Schemachange configuration
+```
+
+## Prerequisites
+
+Before setting up the pipeline, ensure you have:
+
+1. **AWS S3 Bucket** for Terraform remote state
+2. **AWS DynamoDB Table** for state locking
+3. **Snowflake Account** with admin access
+4. **GitHub Repository** with Actions enabled
+
+### Create AWS Resources for Terraform State
+
+```bash
+# Create S3 bucket for Terraform state
+aws s3api create-bucket \
+  --bucket your-terraform-state-bucket \
+  --region us-east-1
+
+# Enable versioning
+aws s3api put-bucket-versioning \
+  --bucket your-terraform-state-bucket \
+  --versioning-configuration Status=Enabled
+
+# Enable encryption
+aws s3api put-bucket-encryption \
+  --bucket your-terraform-state-bucket \
+  --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+
+# Create DynamoDB table for state locking
+aws dynamodb create-table \
+  --table-name terraform-state-lock \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region us-east-1
 ```
 
 ## Setup Instructions
@@ -65,15 +102,23 @@ snowflake_cicd/
 
 Go to your GitHub repository → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
 
+#### Snowflake Secrets
+
 | Secret Name          | Example Value          | Description              |
 | -------------------- | ---------------------- | ------------------------ |
-| `SF_USER`          | `SUKHPREETSNOWFLAKE` | Snowflake username       |
-| `SF_PASSWORD`      | `your_password`      | Snowflake password       |
-| `SF_ROLE`          | `ACCOUNTADMIN`       | Snowflake role           |
-| `SF_ACCOUNT_NAME`  | `MDPVAJJ-NJB64163`   | Snowflake account name   |
-| `SF_DATABASE`      | `DEV_DATABASE`       | Dev database name        |
-| `SF_DATABASE_PROD` | `PROD_DATABASE`      | Production database name |
-| `SF_READ_ROLE`     | `READ_ONLY_ROLE`     | Read-only role name      |
+| `SF_USER`            | `SUKHPREETSNOWFLAKE`   | Snowflake username       |
+| `SF_PASSWORD`        | `your_password`        | Snowflake password       |
+| `SF_ROLE`            | `ACCOUNTADMIN`         | Snowflake role           |
+| `SF_ACCOUNT_NAME`    | `MDPVAJJ-NJB64163`     | Snowflake account name   |
+| `SF_DATABASE`        | `DEV_DATABASE`         | Dev database name        |
+| `SF_DATABASE_PROD`   | `PROD_DATABASE`        | Production database name |
+
+#### AWS Secrets (for Terraform remote state)
+
+| Secret Name            | Description                    |
+| ---------------------- | ------------------------------ |
+| `AWS_ACCESS_KEY_ID`    | AWS access key with S3/DDB access |
+| `AWS_SECRET_ACCESS_KEY`| AWS secret key                 |
 
 ### Step 2: Create GitHub Environments
 
@@ -82,23 +127,42 @@ Go to **Settings** → **Environments** → **New environment**
 #### Create: `development`
 
 - No protection rules needed (auto-deploy)
-- Add any secrets specific to dev
 
 #### Create: `production`
 
 - Click **Required reviewers** → Add yourself/team
-- Click **Add existing secrets** → Add production secrets
-- Add environment-specific secrets:
-  - `SF_DATABASE` → production database name
+- Add environment-specific secrets if needed
 
-### Step 3: Initialize Terraform (First Time)
+### Step 3: Update Terraform Backend Configuration
+
+Edit `terraform/main.tf` and update the S3 backend configuration:
+
+```hcl
+backend "s3" {
+  bucket         = "your-terraform-state-bucket"  # CHANGE THIS
+  key            = "snowflake-cicd/{{env}}/terraform.tfstate"
+  region         = "us-east-1"
+  encrypt        = true
+  dynamodb_table = "terraform-state-lock"
+}
+```
+
+### Step 4: Initialize Terraform (First Time)
 
 ```bash
 cd terraform
-terraform init
+
+# Configure AWS credentials
+export AWS_ACCESS_KEY_ID="your-aws-key"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret"
+
+# Initialize with backend
+terraform init \
+  -backend-config="bucket=your-terraform-state-bucket" \
+  -backend-config="key=snowflake-cicd/dev/terraform.tfstate"
 ```
 
-### Step 4: Test the Pipeline
+### Step 5: Test the Pipeline
 
 #### Test CI Workflow (SQL Lint)
 
@@ -117,12 +181,10 @@ git push origin dev
 #### Test Terraform Workflow
 
 ```bash
-# Push changes to terraform/
-git add terraform/
-git commit -m "Update infrastructure"
-git push origin dev
-
-# Or manually trigger via GitHub Actions UI
+# Go to Actions → Terraform CI/CD → Run workflow
+# Select:
+#   - action: plan
+#   - environment: development
 ```
 
 #### Test Production Deployment
@@ -147,12 +209,12 @@ Terraform is used for architecture-level changes: databases, warehouses, roles, 
 ```hcl
 # Edit terraform/main.tf
 resource "snowflake_warehouse" "etl_warehouse" {
-  name                = "ETL_WH"
+  name                = "ETL_WH_${var.env}"  # Suffix with env
   warehouse_size      = "MEDIUM"
   auto_suspend        = 600
   auto_resume         = true
   initially_suspended = true
-  comment             = "ETL warehouse managed by Terraform"
+  comment             = "ETL warehouse managed by Terraform (${var.env})"
 }
 ```
 
@@ -161,8 +223,8 @@ resource "snowflake_warehouse" "etl_warehouse" {
 ```hcl
 # Edit terraform/main.tf
 resource "snowflake_account_role" "etl_role" {
-  name    = "ETL_ROLE"
-  comment = "ETL role managed by Terraform"
+  name    = "ETL_ROLE_${var.env}"
+  comment = "ETL role managed by Terraform (${var.env})"
 }
 
 resource "snowflake_grant_privileges_to_account_role" "etl_role_wh_usage" {
@@ -185,19 +247,39 @@ resource "snowflake_grant_privileges_to_account_role" "etl_role_wh_usage" {
 warehouse_size = "MEDIUM"  # Changed from XSMALL
 ```
 
-**Change database name:**
-
-```hcl
-# Edit terraform/terraform.tfvars
-database_name = "MY_NEW_DATABASE"
-```
-
 #### Apply Infrastructure Changes
 
-**Option 1: Local (Recommended for testing)**
+**Option 1: Via GitHub Actions (Recommended)**
+
+```bash
+# Push changes to terraform/ directory
+git add terraform/
+git commit -m "Add ETL warehouse"
+git push origin dev
+
+# Go to Actions → Terraform CI/CD → Run workflow
+# Select:
+#   - action: apply
+#   - environment: development (or production)
+```
+
+**Option 2: Local (for testing)**
 
 ```bash
 cd terraform
+
+# Set environment variables
+export TF_VAR_account_name="MDPVAJJ-NJB64163"
+export TF_VAR_user="your_username"
+export TF_VAR_password="your_password"
+export TF_VAR_role="ACCOUNTADMIN"
+export TF_VAR_warehouse="COMPUTE_WH"
+export TF_VAR_database_name="APP_DATABASE_DEV"
+export TF_VAR_warehouse_name="APP_WH_DEV"
+export TF_VAR_warehouse_size="XSMALL"
+export TF_VAR_app_role_name="APP_ROLE_DEV"
+export TF_VAR_read_only_role_name="READ_ONLY_ROLE_DEV"
+export TF_VAR_env="dev"
 
 # View planned changes
 terraform plan
@@ -206,30 +288,15 @@ terraform plan
 terraform apply
 ```
 
-**Option 2: Via GitHub Actions**
-
-```bash
-# Push changes to terraform/ directory
-git add terraform/
-git commit -m "Add ETL warehouse"
-git push origin dev   # Triggers terraform plan
-
-# Merge to main to apply
-git checkout main
-git merge dev
-git push origin main  # Triggers terraform apply
-```
-
 #### Destroy Infrastructure (Use with caution!)
 
 ```bash
-# Local
-cd terraform
-terraform destroy
-
-# Or via GitHub Actions
+# Via GitHub Actions
 # Go to Actions → Terraform CI/CD → Run workflow
-# Select "destroy" from the action dropdown
+# Select:
+#   - action: destroy
+#   - confirm_destroy: DESTROY (type this exactly)
+#   - environment: development (or production)
 ```
 
 ---
@@ -250,8 +317,6 @@ CREATE TABLE IF NOT EXISTS {{ db }}.DEMO.ORDERS (
     order_date TIMESTAMP_NTZ,
     total_amount NUMBER(10,2)
 );
-
-GRANT SELECT ON {{ db }}.DEMO.ORDERS TO ROLE {{ read_role }};
 ```
 
 **Example: Add a new view**
@@ -278,21 +343,6 @@ ALTER TABLE {{ db }}.DEMO.CUSTOMERS
 ADD COLUMN email VARCHAR(255);
 ```
 
-**Example: Update a stored procedure**
-
-```bash
-# Create file: objects/V1.2.0___update_get_customer_proc.sql
-CREATE OR REPLACE PROCEDURE {{ db }}.DEMO.GET_CUSTOMER_BY_ID(id NUMBER)
-RETURNS TABLE (id NUMBER, name VARCHAR, email VARCHAR)
-LANGUAGE SQL
-AS
-$$
-    SELECT id, name, email 
-    FROM {{ db }}.DEMO.CUSTOMERS 
-    WHERE id = id;
-$$;
-```
-
 #### Migration Naming Convention
 
 ```
@@ -316,39 +366,19 @@ Examples:
 
 #### Using Jinja2 Templates
 
-Schemachange supports Jinja2 templating. Available variables are defined in `schemachange-config.yml`:
+Schemachange supports Jinja2 templating. The `db` variable is passed via `--vars`:
 
 ```sql
 -- Use {{ db }} for dynamic database name
 CREATE TABLE {{ db }}.DEMO.MY_TABLE (...);
 
--- Use {{ read_role }} for role grants
-GRANT SELECT ON {{ db }}.DEMO.MY_TABLE TO ROLE {{ read_role }};
-
--- Use custom variables passed via --vars
--- In workflow: --vars '{"SCHEMA_PREFIX": "DEV_"}'
-CREATE SCHEMA {{ db }}.{{ SCHEMA_PREFIX }}MY_SCHEMA;
+-- Variables are passed as:
+-- --vars '{"db": "DEV_DATABASE"}'
 ```
 
 #### Apply Schema Changes
 
-**Option 1: Local testing (dry-run)**
-
-```bash
-pip install schemachange
-
-export SNOWFLAKE_ACCOUNT="MDPVAJJ-NJB64163"
-export SNOWFLAKE_USER="your_user"
-export SNOWFLAKE_PASSWORD="your_password"
-export SNOWFLAKE_ROLE="ACCOUNTADMIN"
-export SNOWFLAKE_DATABASE="your_database"
-export SF_READ_ROLE="READ_ONLY_ROLE"
-
-# Dry-run to check without applying
-schemachange deploy -f objects --dry-run
-```
-
-**Option 2: Via GitHub Actions (Recommended)**
+**Option 1: Via GitHub Actions (Recommended)**
 
 ```bash
 # Add your migration file
@@ -357,10 +387,27 @@ git commit -m "Add orders table"
 git push origin dev
 
 # CI workflow runs automatically:
-# 1. sqlfluff lint - validates SQL syntax
+# 1. lint_schemachange.py - lints SQL with Jinja preprocessing
 # 2. schemachange dry-run - previews changes
 # 3. cd_dev.yml - deploys to dev environment
 # 4. Merge to main for production deployment
+```
+
+**Option 2: Local testing (dry-run)**
+
+```bash
+pip install schemachange
+
+export SNOWFLAKE_ACCOUNT="MDPVAJJ-NJB64163"
+export SNOWFLAKE_USER="your_user"
+export SNOWFLAKE_PASSWORD="your_password"
+export SNOWFLAKE_ROLE="ACCOUNTADMIN"
+export SNOWFLAKE_DATABASE="DEV_DATABASE"
+
+# Dry-run to check without applying
+schemachange deploy -f objects \
+  --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+  --dry-run
 ```
 
 ---
@@ -376,8 +423,9 @@ git push origin dev
 git add terraform/main.tf
 git commit -m "Add ETL warehouse"
 git push origin dev
-# Wait for terraform plan to succeed
-# Merge to main to apply
+
+# Go to Actions → Terraform CI/CD → Run workflow
+# Select action: apply, environment: development
 ```
 
 #### Step 2: Add Schema Objects (Schemachange)
@@ -401,6 +449,7 @@ CREATE TABLE {{ db }}.DEMO.ETL_LOGS (
 git add objects/V1.1.0___create_etl_tables.sql
 git commit -m "Add ETL tracking tables"
 git push origin dev
+
 # CI runs lint, then deploys to dev
 # Merge to main for production
 ```
@@ -409,47 +458,26 @@ git push origin dev
 
 ## Workflow Triggers
 
-| Workflow          | Trigger                                | Description                       |
-| ----------------- | -------------------------------------- | --------------------------------- |
-| `terraform.yml` | Push to`terraform/`                  | Plans on push, applies on`main` |
-| `ci.yml`        | Push to`dev/main` in `objects/`    | Lints SQL + dry-run               |
-| `cd_dev.yml`    | After CI success on`dev`             | Deploys to development            |
-| `cd_prod.yml`   | Manual dispatch or after CI on`main` | Deploys to production             |
+| Workflow | Trigger | Description |
+|----------|---------|-------------|
+| `terraform.yml` | Manual dispatch | Plan/Apply/Destroy with env selection |
+| `ci.yml` | Push to `dev/main` in `objects/` | Lints SQL + dry-run |
+| `cd_dev.yml` | After CI success on `dev` | Deploys to development |
+| `cd_prod.yml` | Manual dispatch with "DEPLOY" | Deploys to production |
 
-## Features
+## Security Features
 
-### CI Pipeline
-
-- SQL linting with sqlfluff
-- Schema migration dry-run
-
-### CD Pipeline
-
-- Automated deployment to dev
-- Manual approval for production
-- Pre-deployment backup (clone database)
-- Post-deployment validation
-- Automatic rollback on failure
-- Backup cleanup on success
-
-### Terraform Pipeline
-
-- Infrastructure as Code for Snowflake
-- Separate CI/CD for infrastructure changes
-- Plan on PR, Apply on merge to main
-- Destroy capability (requires manual dispatch)
-
-### Security
-
-- Secrets stored in GitHub Secrets
-- Environment-specific secrets
-- Required reviewers for production
-- Sensitive variables marked appropriately
+- **Secrets Management**: All credentials stored in GitHub Secrets
+- **Environment Protection**: Production requires manual approval
+- **Confirmation Gates**: 
+  - Production deploy requires typing "DEPLOY"
+  - Terraform destroy requires typing "DESTROY"
+- **Safe Rollback**: Rollback only triggers if backup succeeds
+- **Terraform State**: Encrypted S3 backend with DynamoDB locking
 
 ## Rollback Procedure
 
 If a deployment fails, the pipeline automatically:
-
 1. Clones the backup database
 2. Renames it to the original database name
 3. Validates the rollback
@@ -465,6 +493,13 @@ python scripts/rollback.py "BACKUP_DATABASE_NAME"
 ### Terraform Init Fails
 
 ```bash
+# Check AWS credentials
+aws sts get-caller-identity
+
+# Verify S3 bucket exists
+aws s3 ls s3://your-terraform-state-bucket
+
+# Clear cache and reinitialize
 rm -rf terraform/.terraform terraform/.terraform.lock.hcl
 terraform init
 ```
@@ -473,7 +508,14 @@ terraform init
 
 - Check the change history table exists
 - Verify database permissions
-- Check SQL syntax with `sqlfluff lint objects/`
+- Run SQL lint locally: `python scripts/lint_schemachange.py`
+- Check that `db` variable is passed correctly
+
+### Authentication Errors
+
+- Verify `SF_ACCOUNT_NAME` is correct (e.g., `MDPVAJJ-NJB64163`)
+- Check all GitHub secrets are set correctly
+- For Terraform, ensure AWS credentials have S3/DDB permissions
 
 ### Workflow Not Triggering
 
@@ -481,18 +523,25 @@ terraform init
 - Verify branch names match
 - Check GitHub Actions permissions in repo settings
 
-### Authentication Errors
-
-- Verify `SF_ACCOUNT_NAME` is correct (e.g., `MDPVAJJ-NJB64163`)
-- Check secrets are set in GitHub
-- For legacy accounts, ensure host format is correct
-
 ## Local Testing
 
 ### Test Terraform Locally
 
 ```bash
 cd terraform
+
+# Set required env vars
+export AWS_ACCESS_KEY_ID="your-aws-key"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret"
+export TF_VAR_account_name="MDPVAJJ-NJB64163"
+export TF_VAR_user="your_username"
+export TF_VAR_password="your_password"
+export TF_VAR_role="ACCOUNTADMIN"
+export TF_VAR_warehouse="COMPUTE_WH"
+export TF_VAR_database_name="APP_DATABASE_DEV"
+export TF_VAR_warehouse_name="APP_WH_DEV"
+export TF_VAR_env="dev"
+
 terraform init
 terraform plan
 terraform apply
@@ -501,13 +550,30 @@ terraform apply
 ### Test Schemachange Locally
 
 ```bash
-pip install schemachange
+pip install schemachange snowflake-connector-python
+
 export SNOWFLAKE_ACCOUNT="MDPVAJJ-NJB64163"
 export SNOWFLAKE_USER="your_user"
 export SNOWFLAKE_PASSWORD="your_password"
 export SNOWFLAKE_ROLE="ACCOUNTADMIN"
-export SNOWFLAKE_DATABASE="your_database"
-export SF_READ_ROLE="READ_ONLY_ROLE"
+export SNOWFLAKE_DATABASE="DEV_DATABASE"
 
-schemachange deploy -f objects --dry-run
+# Dry-run
+schemachange deploy -f objects \
+  --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+  --dry-run
+
+# Actual deployment
+schemachange deploy -f objects \
+  --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+  --create-change-history-table
+```
+
+### Test SQL Linting Locally
+
+```bash
+pip install sqlfluff
+
+export SNOWFLAKE_DATABASE="DEV_DATABASE"
+python scripts/lint_schemachange.py
 ```
