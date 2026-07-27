@@ -1,42 +1,42 @@
-# name: CI - Validate SQL
+name: CI - Validate SQL
 
-# on:
-#   workflow_dispatch:
+on:
+  workflow_dispatch:
 
-#   push:
-#     branches: [ dev, main ]
-#     paths: [ 'objects/**' ]
-#   pull_request:
-#     branches: [ main, dev ]
-#     paths: [ 'objects/**' ]
+  push:
+    branches: [ dev, main ]
+    paths: [ 'objects/**' ]
+  pull_request:
+    branches: [ main, dev ]
+    paths: [ 'objects/**' ]
 
-# jobs:
-#   lint-and-validate:
-#     runs-on: ubuntu-latest
-#     env:
-#       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
-#       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-#       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-#       SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-#       SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
-#       SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
+      SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+      SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+      SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
 
-#     steps:
-#     - uses: actions/checkout@v4
+    steps:
+    - uses: actions/checkout@v4
 
-#     - name: Set up Python
-#       uses: actions/setup-python@v5
-#       with:
-#         python-version: '3.11'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-#     - name: Install dependencies
-#       run: pip install sqlfluff schemachange snowflake-connector-python
+    - name: Install dependencies
+      run: pip install sqlfluff schemachange snowflake-connector-python
 
-#     - name: Lint SQL (with Jinja preprocessing)
-#       run: python scripts/lint_schemachange.py
+    - name: Lint SQL (with Jinja preprocessing)
+      run: python scripts/lint_schemachange.py
 
-#     - name: Schemachange Dry-Run
-#       run: |
-#         schemachange deploy -f objects \
-#           --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
-#           --dry-run
+    - name: Schemachange Dry-Run
+      run: |
+        schemachange deploy -f objects \
+          --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+          --dry-run
