@@ -23,7 +23,7 @@ variable "warehouse" {
 variable "database_name" {
   type        = string
   description = "Name of the application database"
-  default     = "APP_DATABASE"
+  default     = "APP_DATABASE1"
 }
 
 variable "warehouse_name" {
@@ -41,7 +41,7 @@ variable "warehouse_size" {
 variable "app_role_name" {
   type        = string
   description = "Name of the application role"
-  default     = "APP_ROLE"
+  default     = "APP_ROLE_1"
 }
 
 variable "read_only_role_name" {
