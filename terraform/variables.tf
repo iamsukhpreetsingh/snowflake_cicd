@@ -23,13 +23,13 @@ variable "warehouse" {
 variable "database_name" {
   type        = string
   description = "Name of the application database"
-  default     = "APP_DATABASE_1"
+  default     = "TERRAFORM_DB"
 }
 
 variable "warehouse_name" {
   type        = string
   description = "Name of the application warehouse"
-  default     = "APP_WH"
+  default     = "TF_APP_WH"
 }
 
 variable "warehouse_size" {
@@ -41,7 +41,7 @@ variable "warehouse_size" {
 variable "app_role_name" {
   type        = string
   description = "Name of the application role"
-  default     = "APP_ROLE1"
+  default     = "TF_APP_ROLE"
 }
 
 variable "read_only_role_name" {
