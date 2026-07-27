@@ -35,7 +35,7 @@ variable "warehouse_name" {
 variable "warehouse_size" {
   type        = string
   description = "Size of the warehouse (XSMALL, SMALL, MEDIUM, LARGE, XLARGE)"
-  default     = "XSMALL"
+  default     = "SMALL"
 }
 
 variable "app_role_name" {

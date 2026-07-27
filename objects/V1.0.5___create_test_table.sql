@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS {{ db }}.DEMO.TEST_TABLE (
+    id NUMBER(38,0),
+    name VARCHAR(100)
+);
