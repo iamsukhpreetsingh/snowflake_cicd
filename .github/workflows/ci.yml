@@ -5,10 +5,10 @@ on:
 
   push:
     branches: [ dev, main ]
-    paths: [ 'objects/**' ]
+    paths: [ 'objects/**', terraform/** ]
   pull_request:
     branches: [ main, dev ]
-    paths: [ 'objects/**' ]
+    paths: [ 'objects/**', terraform/** ]
 
 jobs:
   lint-and-validate:

@@ -33,6 +33,7 @@ on:
     - main
     paths:
     - terraform/**
+    - objects/**
 
   pull_request:
     branches:
@@ -40,6 +41,7 @@ on:
     - main
     paths:
     - terraform/**
+    - objects/**
 
 jobs:
 
