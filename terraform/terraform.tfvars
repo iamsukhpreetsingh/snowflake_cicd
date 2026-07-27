@@ -1,0 +1,5 @@
+account_name = "MDPVAJJ-NJB64163"
+user         = "SUKHPREETSNOWFLAKE"
+password     = "Qwertyuiop@1234567890"
+role         = "ACCOUNTADMIN"
+warehouse    = "COMPUTE_WH"
