@@ -72,15 +72,10 @@ jobs:
         TF_VAR_password: ${{ secrets.SF_PASSWORD }}
         TF_VAR_role: ${{ secrets.SF_ROLE }}
         TF_VAR_warehouse: COMPUTE_WH
-
         TF_VAR_database_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
-
         TF_VAR_warehouse_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
-
         TF_VAR_warehouse_size: XSMALL
-
         TF_VAR_app_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
-
         TF_VAR_read_only_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
 
       run: |

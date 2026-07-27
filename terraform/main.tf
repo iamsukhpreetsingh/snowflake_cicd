@@ -46,7 +46,7 @@ variable "env" {
 }
 
 resource "snowflake_database" "app_database" {
-  name                        = var.database_name
+  name                        = "TERRAFORM_DB"
   comment                     = "Application database managed by Terraform (${var.env})"
   data_retention_time_in_days = 7
 }
@@ -72,7 +72,7 @@ resource "snowflake_account_role" "read_only_role" {
 
 resource "snowflake_schema" "app_schema" {
   database                    = snowflake_database.app_database.name
-  name                        = "APP_SCHEMA"
+  name                        = "TF_APP_SCHEMA"
   comment                     = "Application schema managed by Terraform (${var.env})"
   data_retention_time_in_days = 7
 }
