@@ -27,19 +27,19 @@ variable "warehouse" {
 variable "database_name" {
   type        = string
   description = "Name of the application database"
-  default     = "TERRAFORM_DB"
+  default     = "TERRAFORM_DB1"
 }
 
 variable "warehouse_name" {
   type        = string
   description = "Name of the application warehouse"
-  default     = "TF_APP_WH"
+  default     = "TF_APP_WH1"
 }
 
 variable "warehouse_size" {
   type        = string
   description = "Size of the warehouse (XSMALL, SMALL, MEDIUM, LARGE, XLARGE, XXLARGE)"
-  default     = "XSMALL"
+  default     = "SMALL"
 }
 
 variable "app_role_name" {
