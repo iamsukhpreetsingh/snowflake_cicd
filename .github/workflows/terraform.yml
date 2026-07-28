@@ -1,3 +1,199 @@
+# name: Terraform CI/CD
+
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       action:
+#         description: Terraform action
+#         required: true
+#         default: plan
+#         type: choice
+#         options:
+#         - plan
+#         - apply
+#         - destroy
+
+#       environment:
+#         description: Target environment
+#         required: true
+#         default: development
+#         type: choice
+#         options:
+#         - development
+#         - production
+
+#       confirm_destroy:
+#         description: Type DESTROY to confirm destroy
+#         required: false
+#         default: ""
+
+#   push:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
+#     - objects/**
+
+#   pull_request:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
+#     - objects/**
+
+# jobs:
+
+#   terraform-plan:
+#     runs-on: ubuntu-latest
+
+#     if: >
+#       github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.action == 'plan' ||
+#        github.event.inputs.action == 'apply'))
+
+#     steps:
+#     - uses: actions/checkout@v4
+
+#     - uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
+
+#     - name: Terraform Init
+#       working-directory: terraform
+#       run: terraform init
+
+#     - name: Terraform Plan
+#       working-directory: terraform
+
+#       env:
+#         TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+#         TF_VAR_user: ${{ secrets.SF_USER }}
+#         TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#         TF_VAR_role: ${{ secrets.SF_ROLE }}
+#         TF_VAR_warehouse: COMPUTE_WH
+#         TF_VAR_database_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
+#         TF_VAR_warehouse_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
+#         TF_VAR_warehouse_size: XSMALL
+#         TF_VAR_app_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
+#         TF_VAR_read_only_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
+
+#       run: |
+#         terraform plan \
+#           -out=tfplan \
+#           -var="env=${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development') }}"
+
+#     - name: Upload Plan
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: tfplan
+#         path: terraform/tfplan
+#         retention-days: 7
+
+#   terraform-apply:
+
+#     runs-on: ubuntu-latest
+
+#     needs: terraform-plan
+
+#     if: >
+#       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply') ||
+
+#       (github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+#        github.ref == 'refs/heads/main'))
+
+#     environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development') }}
+
+#     steps:
+
+#     - uses: actions/checkout@v4
+
+#     - uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
+
+#     - name: Terraform Init
+#       working-directory: terraform
+#       run: terraform init
+
+#     - name: Download Plan
+#       uses: actions/download-artifact@v4
+#       with:
+#         name: tfplan
+#         path: terraform
+
+#     - name: Terraform Apply
+#       working-directory: terraform
+
+#       env:
+#         TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+#         TF_VAR_user: ${{ secrets.SF_USER }}
+#         TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#         TF_VAR_role: ${{ secrets.SF_ROLE }}
+#         TF_VAR_warehouse: COMPUTE_WH
+
+#         TF_VAR_database_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
+
+#         TF_VAR_warehouse_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
+
+#         TF_VAR_warehouse_size: XSMALL
+
+#         TF_VAR_app_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
+
+#         TF_VAR_read_only_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
+
+#       run: terraform apply -auto-approve tfplan
+
+#     - name: Terraform Outputs
+#       working-directory: terraform
+#       run: terraform output
+
+#   terraform-destroy:
+
+#     runs-on: ubuntu-latest
+
+#     if: >
+#       github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy' && github.event.inputs.confirm_destroy == 'DESTROY'
+
+#     environment: ${{ github.event.inputs.environment }}
+
+#     steps:
+
+#     - uses: actions/checkout@v4
+
+#     - uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
+
+#     - name: Terraform Init
+#       working-directory: terraform
+#       run: terraform init
+
+#     - name: Terraform Destroy
+#       working-directory: terraform
+
+#       env:
+#         TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+#         TF_VAR_user: ${{ secrets.SF_USER }}
+#         TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#         TF_VAR_role: ${{ secrets.SF_ROLE }}
+#         TF_VAR_warehouse: COMPUTE_WH
+
+#         TF_VAR_database_name: ${{ github.event.inputs.environment == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
+
+#         TF_VAR_warehouse_name: ${{ github.event.inputs.environment == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
+
+#         TF_VAR_warehouse_size: XSMALL
+
+#         TF_VAR_app_role_name: ${{ github.event.inputs.environment == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
+
+#         TF_VAR_read_only_role_name: ${{ github.event.inputs.environment == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
+
+#       run: |
+#         terraform destroy \
+#           -auto-approve \
+#           -var="env=${{ github.event.inputs.environment }}"
+
 name: Terraform CI/CD
 
 on:
@@ -33,7 +229,6 @@ on:
     - main
     paths:
     - terraform/**
-    - objects/**
 
   pull_request:
     branches:
@@ -41,16 +236,78 @@ on:
     - main
     paths:
     - terraform/**
-    - objects/**
 
 jobs:
 
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.vars.outputs.environment }}
+      database_name: ${{ steps.vars.outputs.database_name }}
+      warehouse_name: ${{ steps.vars.outputs.warehouse_name }}
+      app_role_name: ${{ steps.vars.outputs.app_role_name }}
+      read_only_role_name: ${{ steps.vars.outputs.read_only_role_name }}
+    steps:
+    - name: Resolve environment and resource names
+      id: vars
+      # Resource names come from repo Variables (Settings > Secrets and
+      # variables > Actions > Variables) — this is the single source of
+      # truth. cd_dev.yml / cd_prod.yml read the same vars.* entries, so
+      # renaming an object here means updating it in one place, not
+      # hunting across workflow files.
+      env:
+        DB_DEV: ${{ vars.APP_DATABASE_DEV }}
+        DB_PROD: ${{ vars.APP_DATABASE_PROD }}
+        WH_DEV: ${{ vars.APP_WH_DEV }}
+        WH_PROD: ${{ vars.APP_WH_PROD }}
+        ROLE_DEV: ${{ vars.APP_ROLE_DEV }}
+        ROLE_PROD: ${{ vars.APP_ROLE_PROD }}
+        RO_ROLE_DEV: ${{ vars.READ_ONLY_ROLE_DEV }}
+        RO_ROLE_PROD: ${{ vars.READ_ONLY_ROLE_PROD }}
+      run: |
+        if [ "${{ github.event.inputs.environment }}" != "" ]; then
+          ENV="${{ github.event.inputs.environment }}"
+        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          ENV="production"
+        else
+          ENV="development"
+        fi
+        echo "environment=$ENV" >> "$GITHUB_OUTPUT"
+
+        if [ "$ENV" == "production" ]; then
+          echo "database_name=$DB_PROD" >> "$GITHUB_OUTPUT"
+          echo "warehouse_name=$WH_PROD" >> "$GITHUB_OUTPUT"
+          echo "app_role_name=$ROLE_PROD" >> "$GITHUB_OUTPUT"
+          echo "read_only_role_name=$RO_ROLE_PROD" >> "$GITHUB_OUTPUT"
+        else
+          echo "database_name=$DB_DEV" >> "$GITHUB_OUTPUT"
+          echo "warehouse_name=$WH_DEV" >> "$GITHUB_OUTPUT"
+          echo "app_role_name=$ROLE_DEV" >> "$GITHUB_OUTPUT"
+          echo "read_only_role_name=$RO_ROLE_DEV" >> "$GITHUB_OUTPUT"
+        fi
+
   terraform-plan:
     runs-on: ubuntu-latest
+    needs: setup
 
     if: >
       github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.action == 'plan' ||
        github.event.inputs.action == 'apply'))
+
+    outputs:
+      destructive: ${{ steps.check.outputs.destructive }}
+
+    env:
+      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+      TF_VAR_user: ${{ secrets.SF_USER }}
+      TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+      TF_VAR_role: ${{ secrets.SF_ROLE }}
+      TF_VAR_warehouse: COMPUTE_WH
+      TF_VAR_warehouse_size: XSMALL
+      TF_VAR_database_name: ${{ needs.setup.outputs.database_name }}
+      TF_VAR_warehouse_name: ${{ needs.setup.outputs.warehouse_name }}
+      TF_VAR_app_role_name: ${{ needs.setup.outputs.app_role_name }}
+      TF_VAR_read_only_role_name: ${{ needs.setup.outputs.read_only_role_name }}
 
     steps:
     - uses: actions/checkout@v4
@@ -65,23 +322,43 @@ jobs:
 
     - name: Terraform Plan
       working-directory: terraform
-
-      env:
-        TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
-        TF_VAR_user: ${{ secrets.SF_USER }}
-        TF_VAR_password: ${{ secrets.SF_PASSWORD }}
-        TF_VAR_role: ${{ secrets.SF_ROLE }}
-        TF_VAR_warehouse: COMPUTE_WH
-        TF_VAR_database_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
-        TF_VAR_warehouse_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
-        TF_VAR_warehouse_size: XSMALL
-        TF_VAR_app_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
-        TF_VAR_read_only_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
-
       run: |
         terraform plan \
           -out=tfplan \
-          -var="env=${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development') }}"
+          -var="env=${{ needs.setup.outputs.environment }}"
+
+    - name: Check for changes to existing objects
+      id: check
+      working-directory: terraform
+      run: |
+        terraform show -json tfplan > plan.json
+
+        # Anything other than a plain "create" or "no-op" means an existing
+        # object is being updated, renamed, replaced, or deleted.
+        IMPACTED=$(jq '[.resource_changes[]
+          | select(.change.actions != ["no-op"] and .change.actions != ["create"])]' plan.json)
+
+        COUNT=$(echo "$IMPACTED" | jq 'length')
+
+        {
+          echo "## Terraform Plan Summary"
+          echo ""
+          if [ "$COUNT" -gt 0 ]; then
+            echo "⚠️ **$COUNT existing object(s) will be changed, renamed, or destroyed:**"
+            echo ""
+            echo '| Resource | Action |'
+            echo '|---|---|'
+            echo "$IMPACTED" | jq -r '.[] | "| \(.address) | \(.change.actions | join(\", \")) |"'
+          else
+            echo "✅ Plan only creates new objects. No existing objects are affected."
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        if [ "$COUNT" -gt 0 ]; then
+          echo "destructive=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "destructive=false" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Upload Plan
       uses: actions/upload-artifact@v4
@@ -90,22 +367,49 @@ jobs:
         path: terraform/tfplan
         retention-days: 7
 
-  terraform-apply:
-
+  manual-approval:
     runs-on: ubuntu-latest
+    needs: [ setup, terraform-plan ]
 
-    needs: terraform-plan
-
+    # Only gate on approval when the plan actually touches an existing object
+    # (update / rename / replace / delete). Pure creates skip straight to apply.
     if: >
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply') ||
+      needs.terraform-plan.outputs.destructive == 'true' && ((github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply') ||
+       (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')))
 
-      (github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
-       github.ref == 'refs/heads/main'))
-
-    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development') }}
+    # This environment must have "Required reviewers" configured in
+    # Settings > Environments so this job pauses until someone approves it.
+    environment: ${{ needs.setup.outputs.environment }}-approval
 
     steps:
+    - name: Await approval
+      run: |
+        echo "Plan for '${{ needs.setup.outputs.environment }}' includes changes to existing objects."
+        echo "See the Terraform Plan job summary for details. Approve this job to proceed with apply."
 
+  terraform-apply:
+    runs-on: ubuntu-latest
+    needs: [ setup, terraform-plan, manual-approval ]
+
+    if: >
+      always() && needs.terraform-plan.result == 'success' && (needs.manual-approval.result == 'success' || needs.manual-approval.result == 'skipped') && ((github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply') ||
+       (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')))
+
+    environment: ${{ needs.setup.outputs.environment }}
+
+    env:
+      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+      TF_VAR_user: ${{ secrets.SF_USER }}
+      TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+      TF_VAR_role: ${{ secrets.SF_ROLE }}
+      TF_VAR_warehouse: COMPUTE_WH
+      TF_VAR_warehouse_size: XSMALL
+      TF_VAR_database_name: ${{ needs.setup.outputs.database_name }}
+      TF_VAR_warehouse_name: ${{ needs.setup.outputs.warehouse_name }}
+      TF_VAR_app_role_name: ${{ needs.setup.outputs.app_role_name }}
+      TF_VAR_read_only_role_name: ${{ needs.setup.outputs.read_only_role_name }}
+
+    steps:
     - uses: actions/checkout@v4
 
     - uses: hashicorp/setup-terraform@v3
@@ -124,24 +428,6 @@ jobs:
 
     - name: Terraform Apply
       working-directory: terraform
-
-      env:
-        TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
-        TF_VAR_user: ${{ secrets.SF_USER }}
-        TF_VAR_password: ${{ secrets.SF_PASSWORD }}
-        TF_VAR_role: ${{ secrets.SF_ROLE }}
-        TF_VAR_warehouse: COMPUTE_WH
-
-        TF_VAR_database_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
-
-        TF_VAR_warehouse_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
-
-        TF_VAR_warehouse_size: XSMALL
-
-        TF_VAR_app_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
-
-        TF_VAR_read_only_role_name: ${{ (github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development')) == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
-
       run: terraform apply -auto-approve tfplan
 
     - name: Terraform Outputs
@@ -149,16 +435,27 @@ jobs:
       run: terraform output
 
   terraform-destroy:
-
     runs-on: ubuntu-latest
+    needs: setup
 
     if: >
       github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy' && github.event.inputs.confirm_destroy == 'DESTROY'
 
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ needs.setup.outputs.environment }}
+
+    env:
+      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+      TF_VAR_user: ${{ secrets.SF_USER }}
+      TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+      TF_VAR_role: ${{ secrets.SF_ROLE }}
+      TF_VAR_warehouse: COMPUTE_WH
+      TF_VAR_warehouse_size: XSMALL
+      TF_VAR_database_name: ${{ needs.setup.outputs.database_name }}
+      TF_VAR_warehouse_name: ${{ needs.setup.outputs.warehouse_name }}
+      TF_VAR_app_role_name: ${{ needs.setup.outputs.app_role_name }}
+      TF_VAR_read_only_role_name: ${{ needs.setup.outputs.read_only_role_name }}
 
     steps:
-
     - uses: actions/checkout@v4
 
     - uses: hashicorp/setup-terraform@v3
@@ -171,25 +468,7 @@ jobs:
 
     - name: Terraform Destroy
       working-directory: terraform
-
-      env:
-        TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
-        TF_VAR_user: ${{ secrets.SF_USER }}
-        TF_VAR_password: ${{ secrets.SF_PASSWORD }}
-        TF_VAR_role: ${{ secrets.SF_ROLE }}
-        TF_VAR_warehouse: COMPUTE_WH
-
-        TF_VAR_database_name: ${{ github.event.inputs.environment == 'production' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
-
-        TF_VAR_warehouse_name: ${{ github.event.inputs.environment == 'production' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
-
-        TF_VAR_warehouse_size: XSMALL
-
-        TF_VAR_app_role_name: ${{ github.event.inputs.environment == 'production' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
-
-        TF_VAR_read_only_role_name: ${{ github.event.inputs.environment == 'production' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
-
       run: |
         terraform destroy \
           -auto-approve \
-          -var="env=${{ github.event.inputs.environment }}"
+          -var="env=${{ needs.setup.outputs.environment }}"

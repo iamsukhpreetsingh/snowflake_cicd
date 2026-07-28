@@ -3,6 +3,11 @@ output "database_name" {
   description = "Name of the application database"
 }
 
+output "database_fully_qualified_name" {
+  value       = snowflake_database.app_database.fully_qualified_name
+  description = "Fully qualified name of the database"
+}
+
 output "warehouse_name" {
   value       = snowflake_warehouse.app_warehouse.name
   description = "Name of the application warehouse"
@@ -23,7 +28,12 @@ output "schema_name" {
   description = "Name of the application schema"
 }
 
-output "fully_qualified_schema" {
-  value       = "\"${snowflake_database.app_database.name}\".\"${snowflake_schema.app_schema.name}\""
-  description = "Fully qualified schema name"
+output "schema_fully_qualified_name" {
+  value       = snowflake_schema.app_schema.fully_qualified_name
+  description = "Fully qualified schema name (database.schema)"
+}
+
+output "environment" {
+  value       = var.env
+  description = "Current environment"
 }

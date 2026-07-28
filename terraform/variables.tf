@@ -4,20 +4,24 @@ variable "account_name" {
 }
 
 variable "user" {
-  type = string
+  type        = string
+  description = "Snowflake username for authentication"
 }
 
 variable "password" {
-  type      = string
-  sensitive = true
+  type        = string
+  sensitive   = true
+  description = "Snowflake password for authentication"
 }
 
 variable "role" {
-  type = string
+  type        = string
+  description = "Snowflake role to use for operations"
 }
 
 variable "warehouse" {
-  type = string
+  type        = string
+  description = "Snowflake warehouse to use for operations"
 }
 
 variable "database_name" {
@@ -34,18 +38,24 @@ variable "warehouse_name" {
 
 variable "warehouse_size" {
   type        = string
-  description = "Size of the warehouse (XSMALL, SMALL, MEDIUM, LARGE, XLARGE)"
-  default     = "SMALL"
+  description = "Size of the warehouse (XSMALL, SMALL, MEDIUM, LARGE, XLARGE, XXLARGE)"
+  default     = "XSMALL"
 }
 
 variable "app_role_name" {
   type        = string
-  description = "Name of the application role"
+  description = "Name of the application role with full access"
   default     = "TF_APP_ROLE"
 }
 
 variable "read_only_role_name" {
   type        = string
   description = "Name of the read-only role"
-  default     = "READ_ONLY_ROLE"
+  default     = "TF_READ_ONLY_ROLE"
+}
+
+variable "schema_name" {
+  type        = string
+  description = "Name of the application schema"
+  default     = "TF_APP_SCHEMA"
 }
