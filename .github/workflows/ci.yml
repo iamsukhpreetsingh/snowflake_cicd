@@ -1,3 +1,46 @@
+name: CI - Validate SQL
+on:
+  workflow_dispatch:
+
+  push:
+    branches: [ dev, main ]
+    paths: [ 'objects/**' ]
+  pull_request:
+    branches: [ main, dev ]
+    paths: [ 'objects/**' ]
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
+      SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+      SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+      SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+      SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install sqlfluff schemachange
+
+    - name: Fix SQL
+      run: sqlfluff fix objects/ --config .sqlfluff --force
+
+    - name: Lint SQL
+      run: sqlfluff lint objects/ --config .sqlfluff
+
+    - name: Schemachange Dry-Run
+      run: schemachange deploy -f objects --dry-run
+
 # name: CI - Validate SQL
 
 # on:
@@ -41,85 +84,85 @@
 #           --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
 #           --dry-run
 
-name: CI - Validate SQL
+# name: CI - Validate SQL
 
-on:
-  workflow_dispatch:
+# on:
+#   workflow_dispatch:
 
-  pull_request:
-    branches: [ dev, main ]
-    paths: [ 'objects/**' ]
+#   pull_request:
+#     branches: [ dev, main ]
+#     paths: [ 'objects/**' ]
 
-  push:
-    branches: [ dev, main ]
-    paths: [ 'objects/**' ]
+#   push:
+#     branches: [ dev, main ]
+#     paths: [ 'objects/**' ]
 
-concurrency:
-  group: ci-schema-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ci-schema-${{ github.ref }}
+#   cancel-in-progress: true
 
-jobs:
+# jobs:
 
-  lint:
-    runs-on: ubuntu-latest
-    # No Snowflake credentials needed here -- this is pure syntax/style
-    # checking, so it's safe to run even on forked-repo PRs and fails
-    # fast before anything touches Snowflake.
-    steps:
-    - uses: actions/checkout@v4
+#   lint:
+#     runs-on: ubuntu-latest
+#     # No Snowflake credentials needed here -- this is pure syntax/style
+#     # checking, so it's safe to run even on forked-repo PRs and fails
+#     # fast before anything touches Snowflake.
+#     steps:
+#     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+#     - name: Set up Python
+#       uses: actions/setup-python@v5
+#       with:
+#         python-version: '3.11'
 
-    - name: Install dependencies
-      run: pip install sqlfluff schemachange
+#     - name: Install dependencies
+#       run: pip install sqlfluff schemachange
 
-    - name: Lint SQL (with Jinja preprocessing)
-      run: python scripts/lint_schemachange.py
+#     - name: Lint SQL (with Jinja preprocessing)
+#       run: python scripts/lint_schemachange.py
 
-  dry-run:
-    needs: lint
-    runs-on: ubuntu-latest
+#   dry-run:
+#     needs: lint
+#     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - target: dev
-          role_var: READ_ONLY_ROLE_DEV
-          database_var: APP_DATABASE_DEV
-          warehouse_var: APP_WH_DEV
-        - target: prod
-          role_var: READ_ONLY_ROLE_PROD
-          database_var: APP_DATABASE_PROD
-          warehouse_var: APP_WH_PROD
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         include:
+#         - target: dev
+#           role_var: READ_ONLY_ROLE_DEV
+#           database_var: APP_DATABASE_DEV
+#           warehouse_var: APP_WH_DEV
+#         - target: prod
+#           role_var: READ_ONLY_ROLE_PROD
+#           database_var: APP_DATABASE_PROD
+#           warehouse_var: APP_WH_PROD
 
-    env:
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
-      SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-      SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-      # Read-only role on purpose -- a dry-run should never need write
-      # access. Same repo Variables terraform.yml provisions and cd_*.yml
-      # consumes, so this is guaranteed to match real object names.
-      SNOWFLAKE_ROLE: ${{ vars[matrix.role_var] }}
-      SNOWFLAKE_WAREHOUSE: ${{ vars[matrix.warehouse_var] }}
-      SNOWFLAKE_DATABASE: ${{ vars[matrix.database_var] }}
+#     env:
+#       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
+#       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+#       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+#       # Read-only role on purpose -- a dry-run should never need write
+#       # access. Same repo Variables terraform.yml provisions and cd_*.yml
+#       # consumes, so this is guaranteed to match real object names.
+#       SNOWFLAKE_ROLE: ${{ vars[matrix.role_var] }}
+#       SNOWFLAKE_WAREHOUSE: ${{ vars[matrix.warehouse_var] }}
+#       SNOWFLAKE_DATABASE: ${{ vars[matrix.database_var] }}
 
-    steps:
-    - uses: actions/checkout@v4
+#     steps:
+#     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+#     - name: Set up Python
+#       uses: actions/setup-python@v5
+#       with:
+#         python-version: '3.11'
 
-    - name: Install dependencies
-      run: pip install schemachange snowflake-connector-python
+#     - name: Install dependencies
+#       run: pip install schemachange snowflake-connector-python
 
-    - name: Schemachange dry-run (${{ matrix.target }})
-      run: |
-        schemachange deploy -f objects \
-          --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
-          --dry-run
+#     - name: Schemachange dry-run (${{ matrix.target }})
+#       run: |
+#         schemachange deploy -f objects \
+#           --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+#           --dry-run

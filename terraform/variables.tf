@@ -1,3 +1,10 @@
+# ======================================================
+# Input Variables
+# ======================================================
+# These variables must be provided via terraform.tfvars or environment.
+# Grouped by category for clarity.
+
+# --- Authentication & Connection ---
 variable "account_name" {
   type        = string
   description = "Snowflake account identifier (e.g., MDPVAJJ-NJB64163)"
@@ -24,11 +31,11 @@ variable "warehouse" {
   description = "Snowflake warehouse to use for operations"
 }
 
+# --- Database Objects ---
 variable "database_name" {
   type        = string
   description = "Name of the application database"
 }
-
 
 variable "warehouse_name" {
   type        = string
@@ -42,6 +49,7 @@ variable "warehouse_size" {
   default     = "SMALL"
 }
 
+# --- Roles ---
 variable "app_role_name" {
   type        = string
   description = "Name of the application role with full access"
@@ -54,20 +62,20 @@ variable "read_only_role_name" {
   default     = "ACCOUNTADMIN"
 }
 
+# --- Schema ---
 variable "schema_name" {
   type        = string
   description = "Name of the application schema"
 }
 
-
-
-
+# --- Environment Tag ---
 variable "env" {
   type        = string
   description = "Environment tag used in comments"
   default     = "dev"
 }
 
+# --- S3 Storage Integration ---
 variable "storage_integration_name" {
   type        = string
   description = "Name of the Snowflake storage integration object"
@@ -89,6 +97,7 @@ variable "aws_role_arn" {
   description = "ARN of the IAM role Snowflake will assume, e.g. arn:aws:iam::123456789012:role/snowflake-s3-role"
 }
 
+# --- External Stage ---
 variable "stage_name" {
   type        = string
   description = "Name of the external stage"
@@ -100,13 +109,14 @@ variable "stage_url" {
   description = "S3 URL for the stage, e.g. s3://my-bucket/data/"
 }
 
+# --- File Format ---
 variable "file_format_name" {
   type        = string
   description = "Name of the CSV file format"
   default     = "CSV_FILE_FORMAT"
 }
 
-
+# --- Schema Names ---
 variable "staging_schema_name" {
   type        = string
   description = "Schema for external stages and file formats"

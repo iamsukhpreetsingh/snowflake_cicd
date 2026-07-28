@@ -1,3 +1,11 @@
+# ======================================================
+# Output Values
+# ======================================================
+# Exposes resource identifiers for use in:
+# - Other Terraform configurations (via terraform_remote_state)
+# - CI/CD pipelines
+# - Manual AWS IAM setup for S3 integration
+
 output "database_name" {
   value = snowflake_database.app_database.name
 }
@@ -10,7 +18,9 @@ output "storage_integration_name" {
   value = snowflake_storage_integration.s3_integration.name
 }
 
-# These two are what you paste into the AWS S3 bucket policy / IAM role trust policy
+# IAM Role Configuration Outputs
+# These values are required to configure AWS IAM trust policy and S3 bucket policy
+# for secure S3 access. See storage_integration.tf comments for setup details.
 output "storage_aws_iam_user_arn" {
   value = snowflake_storage_integration.s3_integration.storage_aws_iam_user_arn
 }

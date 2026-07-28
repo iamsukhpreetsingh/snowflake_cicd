@@ -1,3 +1,10 @@
+# ======================================================
+# Application Schema Resource
+# ======================================================
+# Primary schema for application objects (tables, views, procedures).
+# Uses the database created in database.tf. Includes data retention policy
+# for Time Travel and Fail-safe features.
+
 resource "snowflake_schema" "app_schema" {
   database                    = snowflake_database.app_database.name
   name                        = var.schema_name
