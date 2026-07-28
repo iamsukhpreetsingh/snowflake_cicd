@@ -5,7 +5,12 @@ role         = "ACCOUNTADMIN"
 warehouse    = "COMPUTE_WH"
 
 
-database_name       = "TERRAFORM_DB"
+database_names = [
+  "TERRAFORM_DB",
+  "SECOND_DB_TF",
+  "THIRD_DB_TF"
+]
+
 warehouse_name      = "TF_APP_WH"
 warehouse_size      = "SMALL"
 app_role_name       = "TF_APP_ROLE"

@@ -29,6 +29,11 @@ variable "database_name" {
   description = "Name of the application database"
 }
 
+variable "database_names" {
+  description = "List of databases to create"
+  type        = set(string)
+}
+
 variable "warehouse_name" {
   type        = string
   description = "Name of the application warehouse"
