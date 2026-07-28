@@ -105,3 +105,10 @@ variable "file_format_name" {
   description = "Name of the CSV file format"
   default     = "CSV_FILE_FORMAT"
 }
+
+
+variable "staging_schema_name" {
+  type        = string
+  description = "Schema for external stages and file formats"
+  default     = "EXTERNAL_STAGING"
+}
