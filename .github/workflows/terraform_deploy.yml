@@ -35,13 +35,20 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.5.0
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform init -input=false
 
     - name: Terraform Format Check
       run: terraform fmt -check
@@ -50,7 +57,7 @@ jobs:
       run: terraform validate
 
     - name: Terraform Plan
-      run: terraform plan -out=tfplan
+      run: terraform plan -input=false -out=tfplan
 
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v4
@@ -63,7 +70,6 @@ jobs:
 
     needs: terraform-plan
 
-    # Apply only on push, never on PRs
     if: github.event_name == 'push'
 
     runs-on: ubuntu-latest
@@ -85,13 +91,20 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.5.0
 
     - name: Terraform Init
-      run: terraform init
+      run: terraform init -input=false
 
     - name: Download Terraform Plan
       uses: actions/download-artifact@v4
@@ -100,7 +113,7 @@ jobs:
         path: terraform
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve tfplan
+      run: terraform apply -input=false -auto-approve tfplan
 
     - name: Terraform Outputs
       run: terraform output
