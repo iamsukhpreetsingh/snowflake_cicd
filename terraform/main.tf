@@ -39,8 +39,3 @@ provider "snowflake" {
   warehouse = var.warehouse
 }
 
-variable "env" {
-  type        = string
-  default     = "dev"
-  description = "Environment name (dev or prod)"
-}
