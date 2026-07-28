@@ -31,6 +31,21 @@ jobs:
       TF_VAR_role: ${{ secrets.SF_ROLE }}
       TF_VAR_warehouse: COMPUTE_WH
 
+      TF_VAR_database_name: ${{ vars.DATABASE_NAME }}
+      TF_VAR_staging_schema_name: ${{ vars.STAGING_SCHEMA_NAME }}
+      TF_VAR_env: ${{ vars.ENV }}
+      TF_VAR_storage_integration_name: ${{ vars.STORAGE_INTEGRATION_NAME }}
+      TF_VAR_s3_bucket_arn: ${{ vars.S3_BUCKET_ARN }}
+      TF_VAR_s3_bucket_path: ${{ vars.S3_BUCKET_PATH }}
+      TF_VAR_aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      TF_VAR_stage_name: ${{ vars.STAGE_NAME }}
+      TF_VAR_stage_url: ${{ vars.STAGE_URL }}
+      TF_VAR_file_format_name: ${{ vars.FILE_FORMAT_NAME }}
+      TF_VAR_warehouse_name: ${{ vars.WAREHOUSE_NAME }}
+      TF_VAR_app_role_name: ${{ vars.APP_ROLE_NAME }}
+      TF_VAR_read_only_role_name: ${{ vars.READ_ONLY_ROLE_NAME }}
+      TF_VAR_schema_name: ${{ vars.SCHEMA_NAME }}
+
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -86,6 +101,21 @@ jobs:
       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
       TF_VAR_role: ${{ secrets.SF_ROLE }}
       TF_VAR_warehouse: COMPUTE_WH
+
+      TF_VAR_database_name: ${{ vars.DATABASE_NAME }}
+      TF_VAR_staging_schema_name: ${{ vars.STAGING_SCHEMA_NAME }}
+      TF_VAR_env: ${{ vars.ENV }}
+      TF_VAR_storage_integration_name: ${{ vars.STORAGE_INTEGRATION_NAME }}
+      TF_VAR_s3_bucket_arn: ${{ vars.S3_BUCKET_ARN }}
+      TF_VAR_s3_bucket_path: ${{ vars.S3_BUCKET_PATH }}
+      TF_VAR_aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+      TF_VAR_stage_name: ${{ vars.STAGE_NAME }}
+      TF_VAR_stage_url: ${{ vars.STAGE_URL }}
+      TF_VAR_file_format_name: ${{ vars.FILE_FORMAT_NAME }}
+      TF_VAR_warehouse_name: ${{ vars.WAREHOUSE_NAME }}
+      TF_VAR_app_role_name: ${{ vars.APP_ROLE_NAME }}
+      TF_VAR_read_only_role_name: ${{ vars.READ_ONLY_ROLE_NAME }}
+      TF_VAR_schema_name: ${{ vars.SCHEMA_NAME }}
 
     steps:
     - name: Checkout Repository
