@@ -24,4 +24,8 @@ provider "snowflake" {
   password                 = var.password
   role                     = var.role
   warehouse                = var.warehouse
+  preview_features_enabled = [
+    "snowflake_file_format_resource"
+  ]
+
 }
