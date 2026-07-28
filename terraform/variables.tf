@@ -27,7 +27,7 @@ variable "warehouse" {
 variable "database_name" {
   type        = string
   description = "Name of the application database"
-  default     = "TERRAFORM_DB2
+  default     = "TERRAFORM_DB2"
 }
 
 variable "warehouse_name" {
