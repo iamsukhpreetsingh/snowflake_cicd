@@ -12,7 +12,6 @@
 # ======================================================
 # Defines Terraform version requirements and provider configuration.
 # Backend stores state in S3 with DynamoDB for state locking to support
-# collaborative workflows and prevent concurrent modifications.
 
 terraform {
   required_version = ">= 1.5.0"
