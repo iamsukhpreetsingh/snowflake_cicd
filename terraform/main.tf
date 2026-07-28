@@ -18,10 +18,10 @@ terraform {
 }
 
 provider "snowflake" {
+  preview_features_enabled = ["snowflake_storage_integration_resource"]
   host      = "${var.account_name}.snowflakecomputing.com"
   user      = var.user
   password  = var.password
   role      = var.role
   warehouse = var.warehouse
 }
-
