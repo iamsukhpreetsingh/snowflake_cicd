@@ -1,4 +1,4 @@
-resource "snowflake_database" "databases" {
+resource "snowflake_database" "app_database" {
   for_each = var.database_names
 
   name                        = each.value

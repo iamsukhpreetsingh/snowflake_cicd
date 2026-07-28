@@ -1,10 +1,6 @@
-name: Terraform Apply
+name: Terraform CI/CD
 
 on:
-  push:
-    branches:
-    - dev
-    - main
   pull_request:
     branches:
     - dev
@@ -12,26 +8,21 @@ on:
     paths:
     - terraform/**
 
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Environment
-        required: true
-        type: choice
-        options:
-        - development
-        - production
+  push:
+    branches:
+    - dev
+    - main
+    paths:
+    - terraform/**
 
 jobs:
-  terraform-apply:
-
+  terraform-plan:
+    name: Terraform Plan
     runs-on: ubuntu-latest
 
     defaults:
       run:
         working-directory: terraform
-
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
     env:
       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
@@ -39,30 +30,146 @@ jobs:
       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
       TF_VAR_role: ${{ secrets.SF_ROLE }}
       TF_VAR_warehouse: COMPUTE_WH
-      # TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
-      # TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
-      # TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
-      # TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
-
-      # TF_VAR_env: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
     steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-    - uses: actions/checkout@v4
-
-    - uses: hashicorp/setup-terraform@v3
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.5.0
 
-    - run: terraform init
+    - name: Terraform Init
+      run: terraform init
 
-    - run: terraform validate
+    - name: Terraform Format Check
+      run: terraform fmt -check
+
+    - name: Terraform Validate
+      run: terraform validate
 
     - name: Terraform Plan
       run: terraform plan -out=tfplan
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-plan
+        path: terraform/tfplan
+
+  terraform-apply:
+    name: Terraform Apply
+
+    needs: terraform-plan
+
+    # Apply only on push, never on PRs
+    if: github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    env:
+      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
+      TF_VAR_user: ${{ secrets.SF_USER }}
+      TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+      TF_VAR_role: ${{ secrets.SF_ROLE }}
+      TF_VAR_warehouse: COMPUTE_WH
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Download Terraform Plan
+      uses: actions/download-artifact@v4
+      with:
+        name: terraform-plan
+        path: terraform
 
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan
 
     - name: Terraform Outputs
       run: terraform output
+
+# name: Terraform Apply
+
+# on:
+#   push:
+#     branches:
+#     - dev
+#     - main
+#   pull_request:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
+
+#   workflow_dispatch:
+#     inputs:
+#       environment:
+#         description: Environment
+#         required: true
+#         type: choice
+#         options:
+#         - development
+#         - production
+
+# jobs:
+#   terraform-apply:
+
+#     runs-on: ubuntu-latest
+
+#     defaults:
+#       run:
+#         working-directory: terraform
+
+#     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+#     env:
+#       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
+#       TF_VAR_user: ${{ secrets.SF_USER }}
+#       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#       TF_VAR_role: ${{ secrets.SF_ROLE }}
+#       TF_VAR_warehouse: COMPUTE_WH
+#       # TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
+#       # TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
+#       # TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
+#       # TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
+
+#       # TF_VAR_env: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+#     steps:
+
+#     - uses: actions/checkout@v4
+
+#     - uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
+
+#     - run: terraform init
+
+#     - run: terraform validate
+
+#     - name: Terraform Plan
+#       run: terraform plan -out=tfplan
+
+#     - name: Terraform Apply
+#       run: terraform apply -auto-approve tfplan
+
+#     - name: Terraform Outputs
+#       run: terraform output
