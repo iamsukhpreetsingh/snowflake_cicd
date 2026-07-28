@@ -33,6 +33,7 @@ variable "database_name" {
 variable "warehouse_name" {
   type        = string
   description = "Name of the application warehouse"
+  default = "COMPUTE_WH"
 }
 
 variable "warehouse_size" {
@@ -44,11 +45,13 @@ variable "warehouse_size" {
 variable "app_role_name" {
   type        = string
   description = "Name of the application role with full access"
+  default = "ACCOUNTADMIN"
 }
 
 variable "read_only_role_name" {
   type        = string
   description = "Name of the read-only role"
+  default = "ACCOUNTADMIN"
 }
 
 variable "schema_name" {
