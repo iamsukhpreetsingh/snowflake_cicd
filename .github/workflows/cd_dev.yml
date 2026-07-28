@@ -82,7 +82,7 @@ jobs:
     environment: development
 
     env:
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
       # Same repo Variables terraform.yml's setup job reads for development —

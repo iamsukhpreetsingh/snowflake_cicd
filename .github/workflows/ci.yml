@@ -97,7 +97,7 @@ jobs:
           warehouse_var: APP_WH_PROD
 
     env:
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
       # Read-only role on purpose -- a dry-run should never need write

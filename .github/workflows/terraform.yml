@@ -298,7 +298,7 @@ jobs:
       destructive: ${{ steps.check.outputs.destructive }}
 
     env:
-      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT_NAME }}
+      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT  }}
       TF_VAR_user: ${{ secrets.SF_USER }}
       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
       TF_VAR_role: ${{ secrets.SF_ROLE }}
