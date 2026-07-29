@@ -39,10 +39,10 @@ terraform {
 
 provider "snowflake" {
   preview_features_enabled = ["snowflake_storage_integration_resource", "snowflake_file_format_resource", "snowflake_stage_resource"]
-  organization             = var.organization_name
-  account                  = var.account_name
-  user                     = var.user
-  password                 = var.password
-  role                     = var.role
-  warehouse                = var.warehouse
+  organization_name         = var.organization_name
+  account_name               = var.account_name
+  user                         = var.user
+  password                      = var.password
+  role                            = var.role
+  warehouse                        = var.warehouse
 }
