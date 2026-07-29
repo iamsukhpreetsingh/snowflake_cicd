@@ -39,7 +39,8 @@ terraform {
 
 provider "snowflake" {
   preview_features_enabled = ["snowflake_storage_integration_resource", "snowflake_file_format_resource", "snowflake_stage_resource"]
-  host                     = "${var.account_name}.snowflakecomputing.com"
+  organization             = var.organization_name
+  account                  = var.account_name
   user                     = var.user
   password                 = var.password
   role                     = var.role
