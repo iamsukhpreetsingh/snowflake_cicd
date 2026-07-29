@@ -1,3 +1,158 @@
+# name: Terraform CI/CD
+
+# on:
+#   pull_request:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
+
+#   push:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
+
+# concurrency:
+#   group: terraform-${{ github.ref }}
+#   cancel-in-progress: false
+
+# jobs:
+#   terraform-plan:
+#     name: Terraform Plan
+#     runs-on: ubuntu-latest
+#     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+#     defaults:
+#       run:
+#         working-directory: terraform
+
+#     env:
+#       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
+#       TF_VAR_user: ${{ secrets.SF_USER }}
+#       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#       TF_VAR_role: ${{ secrets.SF_ROLE }}
+#       TF_VAR_warehouse: COMPUTE_WH
+
+#       TF_VAR_database_name: ${{ vars.DATABASE_NAME }}
+#       TF_VAR_staging_schema_name: ${{ vars.STAGING_SCHEMA_NAME }}
+#       TF_VAR_env: ${{ vars.ENV }}
+#       TF_VAR_storage_integration_name: ${{ vars.STORAGE_INTEGRATION_NAME }}
+#       TF_VAR_s3_bucket_arn: ${{ vars.S3_BUCKET_ARN }}
+#       TF_VAR_s3_bucket_path: ${{ vars.S3_BUCKET_PATH }}
+#       TF_VAR_aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+#       TF_VAR_stage_name: ${{ vars.STAGE_NAME }}
+#       TF_VAR_stage_url: ${{ vars.STAGE_URL }}
+#       TF_VAR_file_format_name: ${{ vars.FILE_FORMAT_NAME }}
+#       TF_VAR_warehouse_name: ${{ vars.WAREHOUSE_NAME }}
+#       TF_VAR_app_role_name: ${{ vars.APP_ROLE_NAME }}
+#       TF_VAR_read_only_role_name: ${{ vars.READ_ONLY_ROLE_NAME }}
+#       TF_VAR_schema_name: ${{ vars.SCHEMA_NAME }}
+
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v4
+
+#     - name: Configure AWS Credentials
+#       uses: aws-actions/configure-aws-credentials@v4
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: us-east-1
+
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
+
+#     - name: Terraform Init
+#       run: terraform init -input=false
+
+#     - name: Terraform Format
+#       run: terraform fmt
+
+#     - name: Terraform Validate
+#       run: terraform validate
+
+#     - name: Terraform Plan
+#       run: terraform plan -input=false -out=tfplan
+
+#     - name: Upload Terraform Plan
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: terraform-plan
+#         path: terraform/tfplan
+
+#   terraform-apply:
+#     name: Terraform Apply
+
+#     needs: terraform-plan
+
+#     if: github.event_name == 'push'
+
+#     runs-on: ubuntu-latest
+
+#     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+
+#     defaults:
+#       run:
+#         working-directory: terraform
+
+#     env:
+#       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
+#       TF_VAR_user: ${{ secrets.SF_USER }}
+#       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#       TF_VAR_role: ${{ secrets.SF_ROLE }}
+#       TF_VAR_warehouse: COMPUTE_WH
+
+#       TF_VAR_database_name: ${{ vars.DATABASE_NAME }}
+#       TF_VAR_staging_schema_name: ${{ vars.STAGING_SCHEMA_NAME }}
+#       TF_VAR_env: ${{ vars.ENV }}
+#       TF_VAR_storage_integration_name: ${{ vars.STORAGE_INTEGRATION_NAME }}
+#       TF_VAR_s3_bucket_arn: ${{ vars.S3_BUCKET_ARN }}
+#       TF_VAR_s3_bucket_path: ${{ vars.S3_BUCKET_PATH }}
+#       TF_VAR_aws_role_arn: ${{ vars.AWS_ROLE_ARN }}
+#       TF_VAR_stage_name: ${{ vars.STAGE_NAME }}
+#       TF_VAR_stage_url: ${{ vars.STAGE_URL }}
+#       TF_VAR_file_format_name: ${{ vars.FILE_FORMAT_NAME }}
+#       TF_VAR_warehouse_name: ${{ vars.WAREHOUSE_NAME }}
+#       TF_VAR_app_role_name: ${{ vars.APP_ROLE_NAME }}
+#       TF_VAR_read_only_role_name: ${{ vars.READ_ONLY_ROLE_NAME }}
+#       TF_VAR_schema_name: ${{ vars.SCHEMA_NAME }}
+
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v4
+
+#     - name: Configure AWS Credentials
+#       uses: aws-actions/configure-aws-credentials@v4
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: us-east-1
+
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
+
+#     - name: Terraform Init
+#       run: terraform init -input=false
+
+#     - name: Download Terraform Plan
+#       uses: actions/download-artifact@v4
+#       with:
+#         name: terraform-plan
+#         path: terraform
+
+#     - name: Terraform Apply
+#       run: terraform apply -input=false -auto-approve tfplan
+
+#     - name: Terraform Outputs
+#       run: terraform output
+
 name: Terraform CI/CD
 
 on:
@@ -23,7 +178,8 @@ jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    # No `environment:` here on purpose — plan should run immediately
+    # on both dev and main without waiting for reviewer approval.
 
     defaults:
       run:
@@ -94,6 +250,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # This is the gate: on main this resolves to "production", which
+    # has a required reviewer configured in Settings > Environments.
+    # On dev it resolves to "development", which has no protection
+    # rules, so the job proceeds automatically.
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
     defaults:
@@ -152,72 +312,3 @@ jobs:
 
     - name: Terraform Outputs
       run: terraform output
-
-# name: Terraform Apply
-
-# on:
-#   push:
-#     branches:
-#     - dev
-#     - main
-#   pull_request:
-#     branches:
-#     - dev
-#     - main
-#     paths:
-#     - terraform/**
-
-#   workflow_dispatch:
-#     inputs:
-#       environment:
-#         description: Environment
-#         required: true
-#         type: choice
-#         options:
-#         - development
-#         - production
-
-# jobs:
-#   terraform-apply:
-
-#     runs-on: ubuntu-latest
-
-#     defaults:
-#       run:
-#         working-directory: terraform
-
-#     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
-
-#     env:
-#       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
-#       TF_VAR_user: ${{ secrets.SF_USER }}
-#       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
-#       TF_VAR_role: ${{ secrets.SF_ROLE }}
-#       TF_VAR_warehouse: COMPUTE_WH
-#       # TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && 'APP_DATABASE_PROD' || 'APP_DATABASE_DEV' }}
-#       # TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && 'APP_WH_PROD' || 'APP_WH_DEV' }}
-#       # TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && 'APP_ROLE_PROD' || 'APP_ROLE_DEV' }}
-#       # TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && 'READ_ONLY_ROLE_PROD' || 'READ_ONLY_ROLE_DEV' }}
-
-#       # TF_VAR_env: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
-
-#     steps:
-
-#     - uses: actions/checkout@v4
-
-#     - uses: hashicorp/setup-terraform@v3
-#       with:
-#         terraform_version: 1.5.0
-
-#     - run: terraform init
-
-#     - run: terraform validate
-
-#     - name: Terraform Plan
-#       run: terraform plan -out=tfplan
-
-#     - name: Terraform Apply
-#       run: terraform apply -auto-approve tfplan
-
-#     - name: Terraform Outputs
-#       run: terraform output
