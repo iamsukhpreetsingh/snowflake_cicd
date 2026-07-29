@@ -19,12 +19,14 @@
 #     environment: development
 
 #     env:
-#       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
+#       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
 #       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
 #       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-#       SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-#       SNOWFLAKE_WAREHOUSE: COMPUTE_WH
-#       SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+#       # Same repo Variables terraform.yml's setup job reads for development —
+#       # single source of truth in Settings > Actions > Variables.
+#       SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_DEV }}
+#       SNOWFLAKE_WAREHOUSE: ${{ vars.APP_WH_DEV }}
+#       SNOWFLAKE_DATABASE: ${{ vars.APP_DATABASE_DEV }}
 
 #     steps:
 #     - uses: actions/checkout@v4
@@ -61,7 +63,7 @@
 #       if: success()
 #       run: python scripts/cleanup_backup.py "${{ steps.backup.outputs.backup_db }}"
 
-name: CD - Dev/QA
+name: CD - Deploy Schema
 
 on:
   workflow_dispatch:
@@ -72,24 +74,46 @@ on:
     - completed
     branches:
     - dev
+    - main
 
 jobs:
-  deploy-dev:
+  resolve:
     if: >
       github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-
     runs-on: ubuntu-latest
-    environment: development
+    outputs:
+      branch: ${{ steps.set.outputs.branch }}
+      env_name: ${{ steps.set.outputs.env_name }}
+    steps:
+    - id: set
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          BRANCH="${{ github.ref_name }}"
+        else
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+        fi
+
+        if [ "$BRANCH" = "main" ]; then
+          ENV_NAME="production"
+        else
+          ENV_NAME="development"
+        fi
+
+        echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+        echo "env_name=$ENV_NAME" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.env_name }}
 
     env:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-      # Same repo Variables terraform.yml's setup job reads for development —
-      # single source of truth in Settings > Actions > Variables.
-      SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_DEV }}
-      SNOWFLAKE_WAREHOUSE: ${{ vars.APP_WH_DEV }}
-      SNOWFLAKE_DATABASE: ${{ vars.APP_DATABASE_DEV }}
+      SNOWFLAKE_ROLE: ${{ needs.resolve.outputs.branch == 'main' && vars.PROD_APP_ROLE_NAME || vars.DEV_APP_ROLE_NAME }}
+      SNOWFLAKE_WAREHOUSE: ${{ needs.resolve.outputs.branch == 'main' && vars.PROD_WAREHOUSE_NAME || vars.DEV_WAREHOUSE_NAME }}
+      SNOWFLAKE_DATABASE: ${{ needs.resolve.outputs.branch == 'main' && vars.PROD_DATABASE_NAME || vars.DEV_DATABASE_NAME }}
 
     steps:
     - uses: actions/checkout@v4
@@ -109,7 +133,7 @@ jobs:
       id: start_time
       run: echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
 
-    - name: Deploy to Dev
+    - name: Deploy schema
       run: |
         schemachange deploy -f objects \
             --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
