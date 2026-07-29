@@ -111,9 +111,9 @@ jobs:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_FULL }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-      SNOWFLAKE_ROLE: ${{ needs.resolve.outputs.branch == 'main' && vars.PROD_APP_ROLE_NAME || vars.DEV_APP_ROLE_NAME }}
-      SNOWFLAKE_WAREHOUSE: ${{ needs.resolve.outputs.branch == 'main' && vars.PROD_WAREHOUSE_NAME || vars.DEV_WAREHOUSE_NAME }}
-      SNOWFLAKE_DATABASE: ${{ needs.resolve.outputs.branch == 'main' && vars.PROD_DATABASE_NAME || vars.DEV_DATABASE_NAME }}
+      SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_NAME }}
+      SNOWFLAKE_WAREHOUSE: ${{ vars.WAREHOUSE_NAME }}
+      SNOWFLAKE_DATABASE: ${{ vars.DATABASE_NAME }}
 
     steps:
     - uses: actions/checkout@v4
@@ -136,7 +136,7 @@ jobs:
     - name: Deploy Objects
       run: |
         schemachange deploy -f objects \
-            --vars "{\"db\": \"$SNOWFLAKE_DATABASE\", \"schema\": \"$SNOWFLAKE_SCHEMA\"}" \
+            --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
             --create-change-history-table
 
     - name: Post-deployment validation
