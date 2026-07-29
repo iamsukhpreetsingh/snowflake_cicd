@@ -4,6 +4,24 @@ import time
 import snowflake.connector
 
 
+def get_account_identifier():
+    org = os.environ.get('SNOWFLAKE_ORGANIZATION_NAME')
+    account = os.environ.get('SNOWFLAKE_ACCOUNT_NAME')
+
+    if org and account:
+        return f"{org}-{account}"
+
+    # Fallback: a single combined SNOWFLAKE_ACCOUNT env var was set directly
+    if os.environ.get('SNOWFLAKE_ACCOUNT'):
+        return os.environ['SNOWFLAKE_ACCOUNT']
+
+    raise EnvironmentError(
+        "Missing Snowflake account identifier: set either "
+        "SNOWFLAKE_ORGANIZATION_NAME + SNOWFLAKE_ACCOUNT_NAME, "
+        "or SNOWFLAKE_ACCOUNT directly."
+    )
+
+
 def create_backup():
     db = os.environ['SNOWFLAKE_DATABASE']
     run_id = os.environ.get('GITHUB_RUN_ID', str(int(time.time())))
@@ -12,7 +30,7 @@ def create_backup():
     conn = snowflake.connector.connect(
         user=os.environ['SNOWFLAKE_USER'],
         password=os.environ['SNOWFLAKE_PASSWORD'],
-        account=os.environ['SNOWFLAKE_ACCOUNT'],
+        account=get_account_identifier(),
         warehouse=os.environ['SNOWFLAKE_WAREHOUSE'],
         role=os.environ['SNOWFLAKE_ROLE'],
     )

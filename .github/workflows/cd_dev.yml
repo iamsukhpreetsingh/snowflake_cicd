@@ -1,67 +1,4 @@
-# name: CD - Dev/QA
-
-# on:
-#   workflow_dispatch:
-
-#   workflow_run:
-#     workflows: [ "CI - Validate SQL" ]
-#     types:
-#     - completed
-#     branches:
-#     - dev
-
-# jobs:
-#   deploy-dev:
-#     if: >
-#       github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-
-#     runs-on: ubuntu-latest
-#     environment: development
-
-#     env:
-#       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
-#       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-#       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-#       SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-#       SNOWFLAKE_WAREHOUSE: COMPUTE_WH
-#       SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
-
-#     steps:
-#     - uses: actions/checkout@v4
-
-#     - name: Set up Python
-#       uses: actions/setup-python@v5
-#       with:
-#         python-version: '3.11'
-
-#     - run: pip install schemachange snowflake-connector-python
-
-#     - name: Create pre-deploy backup snapshot
-#       id: backup
-#       run: python scripts/backup_snapshot.py
-
-#     - name: Record deploy start time
-#       id: start_time
-#       run: echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
-
-#     - name: Deploy to Dev
-#       run: |
-#         schemachange deploy -f objects \
-#             --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
-#             --create-change-history-table
-
-#     - name: Post-deployment validation
-#       run: python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
-
-#     - name: Rollback on failure
-#       if: failure() && steps.backup.outcome == 'success'
-#       run: python scripts/rollback.py "${{ steps.backup.outputs.backup_db }}"
-
-#     - name: Cleanup backup snapshot
-#       if: success()
-#       run: python scripts/cleanup_backup.py "${{ steps.backup.outputs.backup_db }}"
-
-name: CD - Dev/QA
+name: CD - Deploy Schema
 
 on:
   workflow_dispatch:
@@ -72,24 +9,47 @@ on:
     - completed
     branches:
     - dev
+    - main
 
 jobs:
-  deploy-dev:
+  resolve:
     if: >
       github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-
     runs-on: ubuntu-latest
-    environment: development
+    outputs:
+      branch: ${{ steps.set.outputs.branch }}
+      env_name: ${{ steps.set.outputs.env_name }}
+    steps:
+    - id: set
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          BRANCH="${{ github.ref_name }}"
+        else
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+        fi
+
+        if [ "$BRANCH" = "main" ]; then
+          ENV_NAME="production"
+        else
+          ENV_NAME="development"
+        fi
+
+        echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+        echo "env_name=$ENV_NAME" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.env_name }}
 
     env:
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
+      SNOWFLAKE_ORGANIZATION_NAME: ${{ secrets.SF_ORGANIZATION_NAME }}
+      SNOWFLAKE_ACCOUNT_NAME: ${{ secrets.SF_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-      # Same repo Variables terraform.yml's setup job reads for development —
-      # single source of truth in Settings > Actions > Variables.
-      SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_DEV }}
-      SNOWFLAKE_WAREHOUSE: ${{ vars.APP_WH_DEV }}
-      SNOWFLAKE_DATABASE: ${{ vars.APP_DATABASE_DEV }}
+      SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_NAME }}
+      SNOWFLAKE_WAREHOUSE: ${{ vars.WAREHOUSE_NAME }}
+      SNOWFLAKE_DATABASE: ${{ vars.DATABASE_NAME }}
 
     steps:
     - uses: actions/checkout@v4
@@ -98,6 +58,9 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+
+    - name: Build Snowflake account identifier
+      run: echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ORGANIZATION_NAME}-${SNOWFLAKE_ACCOUNT_NAME}" >> "$GITHUB_ENV"
 
     - run: pip install schemachange snowflake-connector-python
 
@@ -109,7 +72,7 @@ jobs:
       id: start_time
       run: echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
 
-    - name: Deploy to Dev
+    - name: Deploy Objects
       run: |
         schemachange deploy -f objects \
             --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
