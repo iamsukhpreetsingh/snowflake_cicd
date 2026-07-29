@@ -10,7 +10,7 @@
 # - null_if: Values to treat as NULL
 # - compression: Auto-detect compression (GZIP, etc.)
 
-resource "snowflake_file_format" "csv_format_test" {
+resource "snowflake_file_format" "csv_format" {
   name     = var.file_format_name
   database = snowflake_database.app_database.name
   schema   = snowflake_schema.external_staging.name
