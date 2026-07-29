@@ -5,51 +5,61 @@
 
 #   workflow_run:
 #     workflows: [ "CI - Validate SQL" ]
-#     types: [ "completed" ]
-#     branches: [ dev ]
+#     types:
+#     - completed
+#     branches:
+#     - dev
 
 # jobs:
 #   deploy-dev:
-#     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+#     if: >
+#       github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+
 #     runs-on: ubuntu-latest
 #     environment: development
+
+#     env:
+#       SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_NAME }}
+#       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
+#       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+#       SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+#       SNOWFLAKE_WAREHOUSE: COMPUTE_WH
+#       SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+
 #     steps:
 #     - uses: actions/checkout@v4
-#       with:
-#         ref: ${{ github.event.workflow_run.head_sha }}
 
-#     - run: pip install schemachange
+#     - name: Set up Python
+#       uses: actions/setup-python@v5
+#       with:
+#         python-version: '3.11'
+
+#     - run: pip install schemachange snowflake-connector-python
+
+#     - name: Create pre-deploy backup snapshot
+#       id: backup
+#       run: python scripts/backup_snapshot.py
 
 #     - name: Record deploy start time
 #       id: start_time
 #       run: echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
 
 #     - name: Deploy to Dev
-#       env:
-#         SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
-#         SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-#         SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-#         SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-#         SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
-#         SNOWFLAKE_DATABASE: ${{ vars.SF_DATABASE }}
-#         SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
 #       run: |
 #         schemachange deploy -f objects \
-#             --vars '{"SCHEMA_PREFIX": "DEV_"}' \
+#             --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
 #             --create-change-history-table
 
 #     - name: Post-deployment validation
-#       env:
-#         SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
-#         SNOWFLAKE_USER: ${{ secrets.SF_USER }}
-#         SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-#         SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-#         SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
-#         SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
-#         SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
-#       run: |
-#         pip install snowflake-connector-python
-#         python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
+#       run: python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
+
+#     - name: Rollback on failure
+#       if: failure() && steps.backup.outcome == 'success'
+#       run: python scripts/rollback.py "${{ steps.backup.outputs.backup_db }}"
+
+#     - name: Cleanup backup snapshot
+#       if: success()
+#       run: python scripts/cleanup_backup.py "${{ steps.backup.outputs.backup_db }}"
 
 name: CD - Dev/QA
 
@@ -72,52 +82,22 @@ jobs:
     environment: development
 
     env:
-      SNOWFLAKE_ACCOUNT: MDPVAJJ-NJB64163
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
-      SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
-      SNOWFLAKE_WAREHOUSE: COMPUTE_WH
-      SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
-      SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
+      # Same repo Variables terraform.yml's setup job reads for development —
+      # single source of truth in Settings > Actions > Variables.
+      SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_DEV }}
+      SNOWFLAKE_WAREHOUSE: ${{ vars.APP_WH_DEV }}
+      SNOWFLAKE_DATABASE: ${{ vars.APP_DATABASE_DEV }}
 
-    # steps:
-    # - name: Checkout repository
-    #   uses: actions/checkout@v4
-    #   with:
-    #     token: ${{ secrets.GITHUB_TOKEN }}
-    #     ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-    # - name: Set up Python virtual environment
-    #   run: |
-    #     python3 -m venv .venv
-    #     source .venv/bin/activate
-    #     python -m pip install --upgrade pip
-    #     pip install schemachange snowflake-connector-python
-
-    # - name: Record deployment start time
-    #   id: start_time
-    #   run: |
-    #     echo "ts=$(date -u +'%Y-%m-%d %H:%M:%S')" >> "$GITHUB_OUTPUT"
-
-    # - name: Deploy to Development
-    #   run: |
-    #     source .venv/bin/activate
-
-    #     schemachange deploy \
-    #       -f objects \
-    #       --vars '{"SCHEMA_PREFIX":"DEV_"}' \
-    #       --create-change-history-table
-
-    # - name: Post-deployment validation
-    #   run: |
-    #     source .venv/bin/activate
-
-    #     python scripts/validate_deployment.py \
-    #       "${{ steps.start_time.outputs.ts }}"
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        ref: ${{ github.event.workflow_run.head_sha }}
+        python-version: '3.11'
 
     - run: pip install schemachange snowflake-connector-python
 
@@ -132,14 +112,14 @@ jobs:
     - name: Deploy to Dev
       run: |
         schemachange deploy -f objects \
-            --vars '{"SCHEMA_PREFIX": "DEV_"}' \
+            --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
             --create-change-history-table
 
     - name: Post-deployment validation
       run: python scripts/validate_deployment.py "${{ steps.start_time.outputs.ts }}"
 
     - name: Rollback on failure
-      if: failure()
+      if: failure() && steps.backup.outcome == 'success'
       run: python scripts/rollback.py "${{ steps.backup.outputs.backup_db }}"
 
     - name: Cleanup backup snapshot
