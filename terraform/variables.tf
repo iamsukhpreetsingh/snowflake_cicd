@@ -129,8 +129,3 @@ variable "staging_schema_name" {
 }
 
 
-
-variable "table_name" {
-  description = "Name of the Snowflake table"
-  type        = string
-}
