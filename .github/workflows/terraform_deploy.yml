@@ -224,7 +224,9 @@ jobs:
         terraform_version: 1.5.0
 
     - name: Terraform Init
-      run: terraform init -input=false
+      run: |
+        terraform init -input=false \
+          -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
 
     - name: Terraform Format
       run: terraform fmt
@@ -299,7 +301,9 @@ jobs:
         terraform_version: 1.5.0
 
     - name: Terraform Init
-      run: terraform init -input=false
+      run: |
+        terraform init -input=false \
+          -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
 
     - name: Download Terraform Plan
       uses: actions/download-artifact@v4
