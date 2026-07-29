@@ -29,9 +29,6 @@ output "storage_aws_external_id" {
   value = snowflake_storage_integration.s3_integration.storage_aws_external_id
 }
 
-output "stage_name" {
-  value = snowflake_stage.s3_external_stage.name
-}
 
 output "file_format_name" {
   value = snowflake_file_format.csv_format.name
