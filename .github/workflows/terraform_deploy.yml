@@ -308,7 +308,7 @@ jobs:
 
     - name: Terraform Init
       run: |
-        terraform init -input=false \
+        terraform init -upgrade -input=false \
           -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
 
     - name: Download Terraform Plan
