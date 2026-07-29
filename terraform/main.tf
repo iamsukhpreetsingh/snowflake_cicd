@@ -1,6 +1,5 @@
 # Terraform Configuration for Snowflake Infrastructure
 # ======================================================
-# This configuration creates and manages Snowflake resources including:
 # - Database, schemas, and warehouses for compute/storage
 # - Storage integration for S3 connectivity
 # - External stages for loading data from S3
