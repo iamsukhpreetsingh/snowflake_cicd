@@ -7,7 +7,7 @@
 
 # ======================================================
 # Terraform Setup & Backend Configuration
-# ======================================================
+# =====================================================
 # Defines Terraform version requirements and provider configuration.
 # Backend stores state in S3 with DynamoDB for state locking to support
 
