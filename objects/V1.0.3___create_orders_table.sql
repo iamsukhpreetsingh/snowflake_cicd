@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS IDENTIFIER('{{ db }}.EXTERNAL_STAGING.ORDERS') (
     customer_id        NUMBER NOT NULL,
     product_id         NUMBER NOT NULL,
     order_date         TIMESTAMP_NTZ NOT NULL,
-    quantity           NUMBER(10,0) NOT NULL,
     unit_price         NUMBER(10,2) NOT NULL,
     discount           NUMBER(10,2) DEFAULT 0,
     shipping_cost      NUMBER(10,2) DEFAULT 0,

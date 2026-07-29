@@ -108,7 +108,7 @@ jobs:
     environment: ${{ needs.resolve.outputs.env_name }}
 
     env:
-      SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT_FULL }}
+      SNOWFLAKE_ACCOUNT: 'MDPVAJJ-NJB64163'
       SNOWFLAKE_USER: ${{ secrets.SF_USER }}
       SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
       SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_NAME }}
