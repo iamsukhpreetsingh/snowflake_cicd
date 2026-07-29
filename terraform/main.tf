@@ -4,7 +4,6 @@
 # - Storage integration for S3 connectivity
 # - External stages for loading data from S3
 # - File formats for parsing data files
-# - Roles for access control
 
 # ======================================================
 # Terraform Setup & Backend Configuration
