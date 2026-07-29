@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS IDENTIFIER('{{ db }}.DEMO.ORDERS') (
+CREATE TABLE IF NOT EXISTS IDENTIFIER('{{ db }}.EXTERNAL_STAGING.ORDERS') (
     order_id           NUMBER IDENTITY(1,1),
     customer_id        NUMBER NOT NULL,
     product_id         NUMBER NOT NULL,

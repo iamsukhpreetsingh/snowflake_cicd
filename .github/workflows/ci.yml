@@ -84,6 +84,6 @@ jobs:
     - name: Schemachange Dry-Run
       run: |
         schemachange deploy -f objects \
-            --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+            --vars "{\"db\": \"$SNOWFLAKE_DATABASE\", \"schema\": \"$SNOWFLAKE_SCHEMA\"}" \
             --create-change-history-table \
             --dry-run
