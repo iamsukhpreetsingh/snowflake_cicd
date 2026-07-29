@@ -5,6 +5,11 @@
 # Grouped by category for clarity.
 
 # --- Authentication & Connection ---
+variable "organization_name" {
+  type        = string
+  description = "Snowflake organization name"
+}
+
 variable "account_name" {
   type        = string
   description = "Snowflake account identifier (e.g., MDPVAJJ-NJB64163)"
@@ -53,13 +58,13 @@ variable "warehouse_size" {
 variable "app_role_name" {
   type        = string
   description = "Name of the application role with full access"
-  default     = "ACCOUNTADMIN"
+  default     = "APP_ROLE"
 }
 
 variable "read_only_role_name" {
   type        = string
   description = "Name of the read-only role"
-  default     = "ACCOUNTADMIN"
+  default     = "READ_ONLY_ROLE"
 }
 
 # --- Schema ---
