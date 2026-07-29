@@ -17,7 +17,7 @@ terraform {
   required_providers {
     snowflake = {
       source  = "snowflakedb/snowflake"
-      version = ">= 1.0.0"
+      version = "~> 2.9.0"
     }
   }
 
@@ -37,7 +37,7 @@ terraform {
 # are enabled for newer resource types (storage integration, file format, stage).
 
 provider "snowflake" {
-  preview_features_enabled = ["snowflake_storage_integration_resource", "snowflake_file_format_resource", "snowflake_stage_resource"]
+  preview_features_enabled = ["snowflake_storage_integration_aws", "snowflake_file_format_resource", "snowflake_stage_resource"]
   organization_name         = var.organization_name
   account_name               = var.account_name
   user                         = var.user
