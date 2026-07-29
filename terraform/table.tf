@@ -23,7 +23,7 @@ resource "snowflake_table" "customers_table" {
   }
 
   column {
-    name     = "PHONE_NO"
+    name     = "PHONE"
     type     = "VARCHAR(255)"
     nullable = true
   }
