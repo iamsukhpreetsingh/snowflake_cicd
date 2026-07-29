@@ -82,4 +82,8 @@ jobs:
       run: sqlfluff lint objects/ --config .sqlfluff
 
     - name: Schemachange Dry-Run
-      run: schemachange deploy -f objects --dry-run
+      run: |
+        schemachange deploy -f objects \
+            --vars "{\"db\": \"$SNOWFLAKE_DATABASE\"}" \
+            --create-change-history-table \
+            --dry-run
