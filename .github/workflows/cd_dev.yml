@@ -50,6 +50,7 @@ jobs:
       SNOWFLAKE_ROLE: ${{ vars.APP_ROLE_NAME }}
       SNOWFLAKE_WAREHOUSE: ${{ vars.WAREHOUSE_NAME }}
       SNOWFLAKE_DATABASE: ${{ vars.DATABASE_NAME }}
+      SF_READ_ROLE: ${{ secrets.SF_READ_ROLE }}
 
     steps:
     - uses: actions/checkout@v4

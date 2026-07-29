@@ -127,3 +127,10 @@ variable "staging_schema_name" {
   description = "Schema for external stages and file formats"
   default     = "EXTERNAL_STAGING"
 }
+
+# --- Custom Role ---
+variable "transformer_role_name" {
+  type        = string
+  description = "Name of the data transformer role"
+  default     = "TRANSFORMER_ROLE"
+}
