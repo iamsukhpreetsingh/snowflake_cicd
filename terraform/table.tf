@@ -17,7 +17,7 @@ resource "snowflake_table" "customers_table" {
   }
 
   column {
-    name     = "CUSTOMER_CATEGORY"
+    name     = "CUSTOMER_CAT"
     type     = "VARCHAR(200)"
     nullable = true
   }
