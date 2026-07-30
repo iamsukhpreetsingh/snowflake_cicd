@@ -203,9 +203,14 @@ jobs:
       if: needs.resolve.outputs.branch == 'main'
       run: pip install snowflake-connector-python
 
+    # - name: Create pre-apply DB backup snapshot (prod only)
+    #   id: backup
+    #   if: needs.resolve.outputs.branch == 'main'
+    #   run: python scripts/tf_backup_snapshot.py
     - name: Create pre-apply DB backup snapshot (prod only)
       id: backup
       if: needs.resolve.outputs.branch == 'main'
+      working-directory: .
       run: python scripts/tf_backup_snapshot.py
 
     - name: Terraform Init
@@ -252,8 +257,10 @@ jobs:
 
     - name: Rollback to last DB snapshot (prod only, on failure)
       if: failure() && needs.resolve.outputs.branch == 'main' && steps.backup.outcome == 'success'
+      working-directory: .
       run: python scripts/tf_rollback.py "${{ steps.backup.outputs.backup_db }}"
 
     - name: Cleanup backup snapshot (prod only, on success)
       if: success() && needs.resolve.outputs.branch == 'main' && steps.backup.outcome == 'success'
+      working-directory: .
       run: python scripts/tf_cleanup_backup.py "${{ steps.backup.outputs.backup_db }}"
