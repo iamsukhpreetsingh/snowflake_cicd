@@ -2,7 +2,6 @@
 # ======================================================
 # - Database, schemas, and warehouses for compute/storage
 # - Storage integration for S3 connectivity
-# - External stages for loading data from S3
 
 # ======================================================
 # Terraform Setup & Backend Configuration
