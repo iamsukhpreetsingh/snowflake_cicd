@@ -29,7 +29,7 @@ resource "snowflake_table" "customers_table" {
   }
 
   column {
-    name     = "SIGNUPDATE"
+    name     = "SIGNUP_DATE"
     type     = "DATE"
     nullable = false
   }
