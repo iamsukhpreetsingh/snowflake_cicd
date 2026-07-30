@@ -89,6 +89,7 @@
 #     - name: Cleanup backup snapshot
 #       if: success()
 #       run: python scripts/cleanup_backup.py "${{ steps.backup.outputs.backup_db }}"
+
 name: Terraform CD - Apply
 
 on:
@@ -175,8 +176,6 @@ jobs:
       SNOWFLAKE_WAREHOUSE: COMPUTE_WH
       SNOWFLAKE_DATABASE: ${{ vars.DATABASE_NAME }}
 
-      TF_STATE_BUCKET: sukhpreet-terraform-state-bucket
-
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
@@ -203,10 +202,6 @@ jobs:
       if: needs.resolve.outputs.branch == 'main'
       run: pip install snowflake-connector-python
 
-    # - name: Create pre-apply DB backup snapshot (prod only)
-    #   id: backup
-    #   if: needs.resolve.outputs.branch == 'main'
-    #   run: python scripts/tf_backup_snapshot.py
     - name: Create pre-apply DB backup snapshot (prod only)
       id: backup
       if: needs.resolve.outputs.branch == 'main'
@@ -218,17 +213,18 @@ jobs:
         terraform init -upgrade -input=false \
           -backend-config="key=snowflake-cicd/${{ needs.resolve.outputs.tf_env }}/terraform.tfstate"
 
-    - name: Capture pre-apply state version (prod only)
-      id: state_version
+    - name: Capture pre-apply state (prod only)
+      id: state_capture
       if: needs.resolve.outputs.branch == 'main'
       run: |
-        VERSION_ID=$(aws s3api list-object-versions \
-          --bucket "$TF_STATE_BUCKET" \
-          --prefix "snowflake-cicd/${{ needs.resolve.outputs.tf_env }}/terraform.tfstate" \
-          --query 'Versions[?IsLatest==`true`].VersionId | [0]' \
-          --output text)
-        echo "version_id=$VERSION_ID" >> "$GITHUB_OUTPUT"
-        echo "Captured pre-apply state version: $VERSION_ID"
+        terraform state pull > pre_apply_state.json
+        if [ -s pre_apply_state.json ]; then
+          echo "captured=true" >> "$GITHUB_OUTPUT"
+          echo "Captured pre-apply state ($(wc -c < pre_apply_state.json) bytes)"
+        else
+          echo "captured=false" >> "$GITHUB_OUTPUT"
+          echo "State pull returned empty — likely first-ever apply, nothing to capture"
+        fi
 
     - name: Download Terraform Plan
       uses: actions/download-artifact@v4
@@ -247,13 +243,10 @@ jobs:
       run: terraform output
 
     - name: Rollback state to pre-apply version (prod only, on failure)
-      if: failure() && needs.resolve.outputs.branch == 'main' && steps.state_version.outputs.version_id != ''
+      if: failure() && needs.resolve.outputs.branch == 'main' && steps.state_capture.outputs.captured == 'true'
       run: |
-        aws s3api copy-object \
-          --bucket "$TF_STATE_BUCKET" \
-          --copy-source "$TF_STATE_BUCKET/snowflake-cicd/${{ needs.resolve.outputs.tf_env }}/terraform.tfstate?versionId=${{ steps.state_version.outputs.version_id }}" \
-          --key "snowflake-cicd/${{ needs.resolve.outputs.tf_env }}/terraform.tfstate"
-        echo "⏪ Restored state to version ${{ steps.state_version.outputs.version_id }}"
+        terraform state push pre_apply_state.json
+        echo "⏪ State restored to pre-apply version via terraform state push"
 
     - name: Rollback to last DB snapshot (prod only, on failure)
       if: failure() && needs.resolve.outputs.branch == 'main' && steps.backup.outcome == 'success'
