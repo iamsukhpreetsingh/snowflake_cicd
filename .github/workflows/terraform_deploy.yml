@@ -327,175 +327,175 @@
 
 #============================================================================
 
-name: Terraform CI/CD
+# name: Terraform CI/CD
 
-on:
-  pull_request:
-    branches:
-    - dev
-    - main
-    paths:
-    - terraform/**
+# on:
+#   pull_request:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
 
-  push:
-    branches:
-    - dev
-    - main
-    paths:
-    - terraform/**
+#   push:
+#     branches:
+#     - dev
+#     - main
+#     paths:
+#     - terraform/**
 
-concurrency:
-  group: terraform-${{ github.ref }}
-  cancel-in-progress: false
+# concurrency:
+#   group: terraform-${{ github.ref }}
+#   cancel-in-progress: false
 
-jobs:
-  terraform-plan:
-    name: Terraform Plan
-    runs-on: ubuntu-latest
-    # No `environment:` here on purpose — plan should run immediately
-    # on both dev and main without waiting for reviewer approval.
+# jobs:
+#   terraform-plan:
+#     name: Terraform Plan
+#     runs-on: ubuntu-latest
+#     # No `environment:` here on purpose — plan should run immediately
+#     # on both dev and main without waiting for reviewer approval.
 
-    defaults:
-      run:
-        working-directory: terraform
+#     defaults:
+#       run:
+#         working-directory: terraform
 
-    env:
-      # Secrets (sensitive) — these stay repo-level, unaffected by this fix
-      TF_VAR_organization_name: ${{ secrets.SF_ORGANIZATION_NAME }}
-      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
-      TF_VAR_user: ${{ secrets.SF_USER }}
-      TF_VAR_password: ${{ secrets.SF_PASSWORD }}
-      TF_VAR_role: ${{ secrets.SF_ROLE }}
-      TF_VAR_warehouse: COMPUTE_WH
+#     env:
+#       # Secrets (sensitive) — these stay repo-level, unaffected by this fix
+#       TF_VAR_organization_name: ${{ secrets.SF_ORGANIZATION_NAME }}
+#       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
+#       TF_VAR_user: ${{ secrets.SF_USER }}
+#       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#       TF_VAR_role: ${{ secrets.SF_ROLE }}
+#       TF_VAR_warehouse: COMPUTE_WH
 
-      # Non-sensitive vars — now repo-level (DEV_*/PROD_*), resolvable
-      # in this job regardless of environment: gating.
-      TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_DATABASE_NAME || vars.DEV_DATABASE_NAME }}
-      TF_VAR_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_SCHEMA_NAME || vars.DEV_SCHEMA_NAME }}
-      TF_VAR_staging_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGING_SCHEMA_NAME || vars.DEV_STAGING_SCHEMA_NAME }}
-      TF_VAR_env: ${{ github.ref == 'refs/heads/main' && vars.PROD_ENV || vars.DEV_ENV }}
-      TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_WAREHOUSE_NAME || vars.DEV_WAREHOUSE_NAME }}
-      TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_APP_ROLE_NAME || vars.DEV_APP_ROLE_NAME }}
-      TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_READ_ONLY_ROLE_NAME || vars.DEV_READ_ONLY_ROLE_NAME }}
-      TF_VAR_storage_integration_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STORAGE_INTEGRATION_NAME || vars.DEV_STORAGE_INTEGRATION_NAME }}
-      TF_VAR_s3_bucket_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_ARN || vars.DEV_S3_BUCKET_ARN }}
-      TF_VAR_s3_bucket_path: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_PATH || vars.DEV_S3_BUCKET_PATH }}
-      TF_VAR_aws_role_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_AWS_ROLE_ARN || vars.DEV_AWS_ROLE_ARN }}
-      TF_VAR_stage_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_NAME || vars.DEV_STAGE_NAME }}
-      TF_VAR_stage_url: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_URL || vars.DEV_STAGE_URL }}
-      TF_VAR_file_format_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_FILE_FORMAT_NAME || vars.DEV_FILE_FORMAT_NAME }}
+#       # Non-sensitive vars — now repo-level (DEV_*/PROD_*), resolvable
+#       # in this job regardless of environment: gating.
+#       TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_DATABASE_NAME || vars.DEV_DATABASE_NAME }}
+#       TF_VAR_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_SCHEMA_NAME || vars.DEV_SCHEMA_NAME }}
+#       TF_VAR_staging_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGING_SCHEMA_NAME || vars.DEV_STAGING_SCHEMA_NAME }}
+#       TF_VAR_env: ${{ github.ref == 'refs/heads/main' && vars.PROD_ENV || vars.DEV_ENV }}
+#       TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_WAREHOUSE_NAME || vars.DEV_WAREHOUSE_NAME }}
+#       TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_APP_ROLE_NAME || vars.DEV_APP_ROLE_NAME }}
+#       TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_READ_ONLY_ROLE_NAME || vars.DEV_READ_ONLY_ROLE_NAME }}
+#       TF_VAR_storage_integration_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STORAGE_INTEGRATION_NAME || vars.DEV_STORAGE_INTEGRATION_NAME }}
+#       TF_VAR_s3_bucket_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_ARN || vars.DEV_S3_BUCKET_ARN }}
+#       TF_VAR_s3_bucket_path: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_PATH || vars.DEV_S3_BUCKET_PATH }}
+#       TF_VAR_aws_role_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_AWS_ROLE_ARN || vars.DEV_AWS_ROLE_ARN }}
+#       TF_VAR_stage_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_NAME || vars.DEV_STAGE_NAME }}
+#       TF_VAR_stage_url: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_URL || vars.DEV_STAGE_URL }}
+#       TF_VAR_file_format_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_FILE_FORMAT_NAME || vars.DEV_FILE_FORMAT_NAME }}
 
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+#     - name: Configure AWS Credentials
+#       uses: aws-actions/configure-aws-credentials@v4
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: us-east-1
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.5.0
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
 
-    - name: Terraform Init
-      run: |
-        terraform init -upgrade -input=false \
-          -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
+#     - name: Terraform Init
+#       run: |
+#         terraform init -upgrade -input=false \
+#           -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
 
-    - name: Terraform Format
-      run: terraform fmt
+#     - name: Terraform Format
+#       run: terraform fmt
 
-    - name: Terraform Validate
-      run: terraform validate
+#     - name: Terraform Validate
+#       run: terraform validate
 
-    - name: Terraform Plan
-      run: terraform plan -input=false -out=tfplan
+#     - name: Terraform Plan
+#       run: terraform plan -input=false -out=tfplan
 
-    - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v4
-      with:
-        name: terraform-plan
-        path: terraform/tfplan
+#     - name: Upload Terraform Plan
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: terraform-plan
+#         path: terraform/tfplan
 
-  terraform-apply:
-    name: Terraform Apply
+#   terraform-apply:
+#     name: Terraform Apply
 
-    needs: terraform-plan
+#     needs: terraform-plan
 
-    if: github.event_name == 'push'
+#     if: github.event_name == 'push'
 
-    runs-on: ubuntu-latest
+#     runs-on: ubuntu-latest
 
-    # This is the gate: on main this resolves to "production", which
-    # has a required reviewer configured in Settings > Environments.
-    # On dev it resolves to "development", which has no protection
-    # rules, so the job proceeds automatically.
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+#     # This is the gate: on main this resolves to "production", which
+#     # has a required reviewer configured in Settings > Environments.
+#     # On dev it resolves to "development", which has no protection
+#     # rules, so the job proceeds automatically.
+#     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
-    defaults:
-      run:
-        working-directory: terraform
+#     defaults:
+#       run:
+#         working-directory: terraform
 
-    env:
-      # Secrets (sensitive)
-      TF_VAR_organization_name: ${{ secrets.SF_ORGANIZATION_NAME }}
-      TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
-      TF_VAR_user: ${{ secrets.SF_USER }}
-      TF_VAR_password: ${{ secrets.SF_PASSWORD }}
-      TF_VAR_role: ${{ secrets.SF_ROLE }}
-      TF_VAR_warehouse: COMPUTE_WH
+#     env:
+#       # Secrets (sensitive)
+#       TF_VAR_organization_name: ${{ secrets.SF_ORGANIZATION_NAME }}
+#       TF_VAR_account_name: ${{ secrets.SF_ACCOUNT }}
+#       TF_VAR_user: ${{ secrets.SF_USER }}
+#       TF_VAR_password: ${{ secrets.SF_PASSWORD }}
+#       TF_VAR_role: ${{ secrets.SF_ROLE }}
+#       TF_VAR_warehouse: COMPUTE_WH
 
-      # Non-sensitive vars — same repo-level source as the plan job.
-      # Using the SAME vars here (not environment-scoped ones) is what
-      # guarantees apply uses identical values to what was planned.
-      TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_DATABASE_NAME || vars.DEV_DATABASE_NAME }}
-      TF_VAR_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_SCHEMA_NAME || vars.DEV_SCHEMA_NAME }}
-      TF_VAR_staging_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGING_SCHEMA_NAME || vars.DEV_STAGING_SCHEMA_NAME }}
-      TF_VAR_env: ${{ github.ref == 'refs/heads/main' && vars.PROD_ENV || vars.DEV_ENV }}
-      TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_WAREHOUSE_NAME || vars.DEV_WAREHOUSE_NAME }}
-      TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_APP_ROLE_NAME || vars.DEV_APP_ROLE_NAME }}
-      TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_READ_ONLY_ROLE_NAME || vars.DEV_READ_ONLY_ROLE_NAME }}
-      TF_VAR_storage_integration_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STORAGE_INTEGRATION_NAME || vars.DEV_STORAGE_INTEGRATION_NAME }}
-      TF_VAR_s3_bucket_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_ARN || vars.DEV_S3_BUCKET_ARN }}
-      TF_VAR_s3_bucket_path: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_PATH || vars.DEV_S3_BUCKET_PATH }}
-      TF_VAR_aws_role_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_AWS_ROLE_ARN || vars.DEV_AWS_ROLE_ARN }}
-      TF_VAR_stage_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_NAME || vars.DEV_STAGE_NAME }}
-      TF_VAR_stage_url: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_URL || vars.DEV_STAGE_URL }}
-      TF_VAR_file_format_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_FILE_FORMAT_NAME || vars.DEV_FILE_FORMAT_NAME }}
+#       # Non-sensitive vars — same repo-level source as the plan job.
+#       # Using the SAME vars here (not environment-scoped ones) is what
+#       # guarantees apply uses identical values to what was planned.
+#       TF_VAR_database_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_DATABASE_NAME || vars.DEV_DATABASE_NAME }}
+#       TF_VAR_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_SCHEMA_NAME || vars.DEV_SCHEMA_NAME }}
+#       TF_VAR_staging_schema_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGING_SCHEMA_NAME || vars.DEV_STAGING_SCHEMA_NAME }}
+#       TF_VAR_env: ${{ github.ref == 'refs/heads/main' && vars.PROD_ENV || vars.DEV_ENV }}
+#       TF_VAR_warehouse_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_WAREHOUSE_NAME || vars.DEV_WAREHOUSE_NAME }}
+#       TF_VAR_app_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_APP_ROLE_NAME || vars.DEV_APP_ROLE_NAME }}
+#       TF_VAR_read_only_role_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_READ_ONLY_ROLE_NAME || vars.DEV_READ_ONLY_ROLE_NAME }}
+#       TF_VAR_storage_integration_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STORAGE_INTEGRATION_NAME || vars.DEV_STORAGE_INTEGRATION_NAME }}
+#       TF_VAR_s3_bucket_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_ARN || vars.DEV_S3_BUCKET_ARN }}
+#       TF_VAR_s3_bucket_path: ${{ github.ref == 'refs/heads/main' && vars.PROD_S3_BUCKET_PATH || vars.DEV_S3_BUCKET_PATH }}
+#       TF_VAR_aws_role_arn: ${{ github.ref == 'refs/heads/main' && vars.PROD_AWS_ROLE_ARN || vars.DEV_AWS_ROLE_ARN }}
+#       TF_VAR_stage_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_NAME || vars.DEV_STAGE_NAME }}
+#       TF_VAR_stage_url: ${{ github.ref == 'refs/heads/main' && vars.PROD_STAGE_URL || vars.DEV_STAGE_URL }}
+#       TF_VAR_file_format_name: ${{ github.ref == 'refs/heads/main' && vars.PROD_FILE_FORMAT_NAME || vars.DEV_FILE_FORMAT_NAME }}
 
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+#     - name: Configure AWS Credentials
+#       uses: aws-actions/configure-aws-credentials@v4
+#       with:
+#         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws-region: us-east-1
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.5.0
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v3
+#       with:
+#         terraform_version: 1.5.0
 
-    - name: Terraform Init
-      run: |
-        terraform init -upgrade -input=false \
-          -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
+#     - name: Terraform Init
+#       run: |
+#         terraform init -upgrade -input=false \
+#           -backend-config="key=snowflake-cicd/${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}/terraform.tfstate"
 
-    - name: Download Terraform Plan
-      uses: actions/download-artifact@v4
-      with:
-        name: terraform-plan
-        path: terraform
+#     - name: Download Terraform Plan
+#       uses: actions/download-artifact@v4
+#       with:
+#         name: terraform-plan
+#         path: terraform
 
-    - name: Terraform Apply
-      run: terraform apply -input=false -auto-approve tfplan
+#     - name: Terraform Apply
+#       run: terraform apply -input=false -auto-approve tfplan
 
-    - name: Terraform Outputs
-      run: terraform output
+#     - name: Terraform Outputs
+#       run: terraform output
