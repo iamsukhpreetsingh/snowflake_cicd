@@ -4,8 +4,13 @@ resource "snowflake_table" "customers_table" {
   name     = "CUSTOMERS_TF"
   comment  = "Managed by Terraform (${var.env})"
 
+  depends_on = [
+    snowflake_database.app_database,
+    snowflake_schema.app_schema
+  ]
+
   column {
-    name     = "CUSTOMER_ID"
+    name     = "CUSTOMERID"
     type     = "NUMBER(38,0)"
     nullable = false
   }
