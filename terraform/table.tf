@@ -1,7 +1,7 @@
 resource "snowflake_table" "customers_table" {
   database = var.database_name
   schema   = var.schema_name
-  name     = "TF_CUSTOMERS"
+  name     = "CUSTOMERS_TF"
   comment  = "Managed by Terraform (${var.env})"
 
   column {
