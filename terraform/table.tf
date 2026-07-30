@@ -11,25 +11,25 @@ resource "snowflake_table" "customers_table" {
   }
 
   column {
-    name     = "CUSTOMER_NAME"
+    name     = "CUSTOMERNAME"
     type     = "VARCHAR(200)"
     nullable = false
   }
 
   column {
-    name     = "CUSTOMER_CATEGORY"
+    name     = "CUSTOMERCATEGORY"
     type     = "VARCHAR(200)"
     nullable = true
   }
 
   column {
-    name     = "PHONE_NUMBER"
+    name     = "PHONENUMBER"
     type     = "VARCHAR(255)"
     nullable = true
   }
 
   column {
-    name     = "SIGNUP_DATE"
+    name     = "SIGNUPDATE"
     type     = "DATE"
     nullable = false
   }
